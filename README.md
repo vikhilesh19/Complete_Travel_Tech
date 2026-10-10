@@ -16,6 +16,7 @@ During floods, cyclones, and landslides, visitors may have trouble finding clear
 - Officer sign-in and PostgreSQL-backed hazard reporting.
 - Officers can delete only reports they created; ownership is enforced by the API.
 - Traveler hazard feed, safety-question fallback, and assistance actions.
+- Topbar database health indicator, refreshed every 30 seconds through the API.
 - Optional SMS subscriptions with phone verification and area-specific hazard notifications. Requires Twilio configuration and may incur charges.
 - PWA shell and IndexedDB snapshots for selected offline information.
 
@@ -28,6 +29,8 @@ During floods, cyclones, and landslides, visitors may have trouble finding clear
 - `public/sw.js`: PWA service worker and offline public-data handling.
 
 The Vite development server proxies `/api` to `http://localhost:3001` by default. The browser can use `VITE_API_BASE_URL` to call a separately hosted API. The frontend must point to a backend that implements all routes it uses; a successful `/api/health` response alone does not provide the application API.
+
+The application API's `GET /api/health` executes a PostgreSQL query and reports whether its configured database connection is available. The frontend uses this endpoint only for the connection indicator; hazard and officer data continue to use their dedicated API routes.
 
 ## Requirements
 
@@ -105,21 +108,22 @@ No public deployment URL is currently recorded in this repository.
 
 The full Express API in `server/index.js` provides:
 
-| Route                                      | Access            | Purpose                                                   |
-| ------------------------------------------ | ----------------- | --------------------------------------------------------- |
-| `GET /api/hazards`                         | Public            | Read unexpired hazard reports.                            |
-| `POST /api/hazards`                        | Officer session   | Publish a hazard report.                                  |
-| `DELETE /api/hazards/:id`                  | Owning officer    | Delete a report created by the signed-in officer.         |
-| `GET /api/officer/session`                 | Public            | Check officer session state.                              |
-| `POST /api/officer/login`                  | Public            | Sign in an officer.                                       |
-| `POST /api/officer/register/*`             | Public, email OTP | Register an officer account. Requires SMTP configuration. |
-| `GET /api/officer/hazards`                 | Officer session   | List IDs owned by the signed-in officer.                  |
-| `GET /api/officer/help-queue`              | Officer session   | Read tourist assistance actions.                          |
-| `POST /api/help-queue`                     | Public            | Record a help action.                                     |
-| `POST /api/translate-alert`                | Public            | Translate alert text.                                     |
-| `POST /api/sms/subscriptions/request-code` | Public            | Send a phone verification code when Twilio is configured. |
-| `POST /api/sms/subscriptions/verify`       | Public            | Verify and subscribe a phone number to a region.          |
-| `POST /api/sms/twilio/inbound`             | Twilio signature  | Process SMS opt-out keywords.                             |
+| Route                                      | Access            | Purpose                                                     |
+| ------------------------------------------ | ----------------- | ----------------------------------------------------------- |
+| `GET /api/health`                          | Public            | Check PostgreSQL connectivity; does not return hazard data. |
+| `GET /api/hazards`                         | Public            | Read unexpired hazard reports.                              |
+| `POST /api/hazards`                        | Officer session   | Publish a hazard report.                                    |
+| `DELETE /api/hazards/:id`                  | Owning officer    | Delete a report created by the signed-in officer.           |
+| `GET /api/officer/session`                 | Public            | Check officer session state.                                |
+| `POST /api/officer/login`                  | Public            | Sign in an officer.                                         |
+| `POST /api/officer/register/*`             | Public, email OTP | Register an officer account. Requires SMTP configuration.   |
+| `GET /api/officer/hazards`                 | Officer session   | List IDs owned by the signed-in officer.                    |
+| `GET /api/officer/help-queue`              | Officer session   | Read tourist assistance actions.                            |
+| `POST /api/help-queue`                     | Public            | Record a help action.                                       |
+| `POST /api/translate-alert`                | Public            | Translate alert text.                                       |
+| `POST /api/sms/subscriptions/request-code` | Public            | Send a phone verification code when Twilio is configured.   |
+| `POST /api/sms/subscriptions/verify`       | Public            | Verify and subscribe a phone number to a region.            |
+| `POST /api/sms/twilio/inbound`             | Twilio signature  | Process SMS opt-out keywords.                               |
 
 The separate Vercel function currently exposes only `GET /api/health`.
 

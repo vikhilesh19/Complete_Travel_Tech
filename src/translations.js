@@ -191,6 +191,10 @@ export const translations = {
       notifications: "Notifications",
       profile: "Traveler profile",
       saveOffline: "Save for offline",
+      databaseStatusLabel: "Database connection status",
+      databaseChecking: "Checking database",
+      databaseConnected: "Database connected",
+      databaseUnavailable: "Database unavailable",
     },
     places: {
       kerala: {
@@ -332,6 +336,10 @@ export const translations = {
       notifications: "सूचनाएं",
       profile: "यात्री प्रोफ़ाइल",
       saveOffline: "ऑफ़लाइन सहेजें",
+      databaseStatusLabel: "डेटाबेस कनेक्शन स्थिति",
+      databaseChecking: "डेटाबेस की जाँच हो रही है",
+      databaseConnected: "डेटाबेस कनेक्ट है",
+      databaseUnavailable: "डेटाबेस उपलब्ध नहीं",
     },
     places: {
       kerala: {
@@ -473,6 +481,10 @@ export const translations = {
       notifications: "അറിയിപ്പുകൾ",
       profile: "യാത്രാ പ്രൊഫൈൽ",
       saveOffline: "ഓഫ്‌ലൈനായി സേവ് ചെയ്യുക",
+      databaseStatusLabel: "ഡാറ്റാബേസ് കണക്ഷൻ നില",
+      databaseChecking: "ഡാറ്റാബേസ് പരിശോധിക്കുന്നു",
+      databaseConnected: "ഡാറ്റാബേസ് ബന്ധിപ്പിച്ചു",
+      databaseUnavailable: "ഡാറ്റാബേസ് ലഭ്യമല്ല",
     },
     places: {
       kerala: {
@@ -613,6 +625,10 @@ export const translations = {
       notifications: "Meldingen",
       profile: "Reizigersprofiel",
       saveOffline: "Offline opslaan",
+      databaseStatusLabel: "Databasestatus",
+      databaseChecking: "Database controleren",
+      databaseConnected: "Database verbonden",
+      databaseUnavailable: "Database niet beschikbaar",
     },
     places: {
       kerala: {

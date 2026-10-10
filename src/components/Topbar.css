@@ -91,6 +91,32 @@
   color: #66736b;
   font-size: 10px;
 }
+.database-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #66736b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.database-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a2aaa4;
+}
+.database-status.is-connected i {
+  background: #579d7e;
+  box-shadow: 0 0 0 3px #e3f0e8;
+}
+.database-status.is-unavailable i {
+  background: #bd5348;
+  box-shadow: 0 0 0 3px #f6e7e4;
+}
+.database-status.is-checking i {
+  background: #c28a37;
+  box-shadow: 0 0 0 3px #f4ecdc;
+}
 .topbar-live span {
   width: 6px;
   height: 6px;
@@ -169,7 +195,8 @@
 @media (max-width: 600px) {
   .language-label,
   .location-label,
-  .topbar-live {
+  .topbar-live,
+  .database-status > span {
     display: none;
   }
 }

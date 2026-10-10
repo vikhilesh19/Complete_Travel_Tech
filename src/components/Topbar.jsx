@@ -14,6 +14,7 @@ function Topbar({
   savedOfflineAt,
   savingOffline,
   offlineSaveDisabled,
+  databaseStatus = "checking",
   t,
 }) {
   const languageSelectId = useId();
@@ -133,6 +134,20 @@ function Topbar({
       </div>
 
       <div className="topbar-right">
+        <span
+          className={`database-status is-${databaseStatus}`}
+          role="status"
+          title={topbarText.databaseStatusLabel || "Database connection status"}
+        >
+          <i />
+          <span>
+            {databaseStatus === "connected"
+              ? topbarText.databaseConnected || "Database connected"
+              : databaseStatus === "unavailable"
+                ? topbarText.databaseUnavailable || "Database unavailable"
+                : topbarText.databaseChecking || "Checking database"}
+          </span>
+        </span>
         <span className="topbar-live">
           <span />
           {topbarText.weatherSource}

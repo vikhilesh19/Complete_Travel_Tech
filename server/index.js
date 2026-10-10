@@ -69,6 +69,26 @@ app.use((req, res, next) => {
   return next();
 });
 
+app.get("/api/health", async (_req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT NOW() AS server_time, current_database() AS database_name",
+    );
+    return res.json({
+      success: true,
+      message: "Database connected",
+      database: result.rows[0].database_name,
+      time: result.rows[0].server_time,
+    });
+  } catch (error) {
+    console.error("Database health check failed:", error.message);
+    return res.status(503).json({
+      success: false,
+      message: "Database connection failed",
+    });
+  }
+});
+
 function smsProviderConfig() {
   return {
     accountSid: process.env.TWILIO_ACCOUNT_SID,

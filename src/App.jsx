@@ -63,6 +63,7 @@ function App() {
   const [pendingHelpActions, setPendingHelpActions] = useState([]);
   const [smsHelpNumber, setSmsHelpNumber] = useState("");
   const [smsAlertsEnabled, setSmsAlertsEnabled] = useState(false);
+  const [databaseStatus, setDatabaseStatus] = useState("checking");
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [savingOffline, setSavingOffline] = useState(false);
   const [isOnline, setIsOnline] = useState(
@@ -83,6 +84,28 @@ function App() {
   const savedDataIsOld =
     lastSavedAt &&
     expiryCheckTime - Date.parse(lastSavedAt) > 6 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    let active = true;
+    async function checkDatabase() {
+      try {
+        const response = await apiFetch("/api/health", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok || data.success !== true)
+          throw new Error("Database is unavailable.");
+        if (active) setDatabaseStatus("connected");
+      } catch {
+        if (active) setDatabaseStatus("unavailable");
+      }
+    }
+
+    checkDatabase();
+    const refresh = window.setInterval(checkDatabase, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(refresh);
+    };
+  }, []);
 
   function excludeDeletedHazards(items) {
     return items.filter(
@@ -460,6 +483,7 @@ function App() {
           savedOfflineAt={savedSnapshot?.savedAt}
           savingOffline={savingOffline}
           offlineSaveDisabled={!isOnline || offlineDataShown}
+          databaseStatus={databaseStatus}
           t={t.topbar}
         />
         {offlineDataShown && (
