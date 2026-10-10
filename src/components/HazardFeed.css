@@ -55,11 +55,16 @@
   font-size: 9px;
   font-weight: 800;
 }
-.hazard-severity-high,
-.hazard-severity-severe {
+.hazard-severity-danger {
   color: #a13e32;
 }
-.hazard-severity-low {
+.hazard-severity-warning {
+  color: #a96425;
+}
+.hazard-severity-advisory {
+  color: #92721d;
+}
+.hazard-severity-information {
   color: #437356;
 }
 .hazard-report-source {
@@ -81,6 +86,47 @@
   gap: 5px;
   color: #68756c;
   font-size: 9px;
+}
+.hazard-report-source.is-demo {
+  color: #93602b;
+}
+.hazard-report-source.is-official {
+  color: #397052;
+}
+.hazard-report-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 10px 0;
+  border-top: 1px solid #edf0eb;
+  border-bottom: 1px solid #edf0eb;
+}
+.hazard-report-dates span,
+.hazard-report-attribution span {
+  display: grid;
+  gap: 4px;
+  color: #59665d;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.hazard-report-dates strong,
+.hazard-report-attribution strong {
+  color: #7d887f;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+.hazard-report-attribution {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hazard-report-attribution a {
+  color: #397052;
+  font-size: 9px;
+  font-weight: 700;
 }
 .hazard-report-description {
   margin: 9px 0;

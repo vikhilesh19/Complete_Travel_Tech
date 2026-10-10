@@ -197,37 +197,58 @@
   grid-template-columns: 1fr 1fr;
   column-gap: 12px;
 }
-.report-form > label,
-.report-form > input,
-.report-form > textarea,
-.report-form > select,
-.report-form > .coordinate-label,
-.report-form > .coordinate-inputs,
+.report-form > .report-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.report-form > .report-full-width,
 .report-form > .officer-error,
 .report-form > .officer-disclaimer,
 .report-form > .officer-submit {
   grid-column: 1 / -1;
 }
-.coordinate-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 5px;
-  color: #55635a;
-  font-size: 10px;
-  font-weight: 700;
-}
-.coordinate-inputs {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-}
-.coordinate-inputs label {
+.report-field label {
   margin: 0;
 }
-.coordinate-inputs input {
+.report-field input,
+.report-field select,
+.report-field textarea {
   min-width: 0;
+}
+.report-demo-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #e2e7e1;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.report-demo-toggle > input {
+  width: 16px;
+  min-height: 16px;
+  height: 16px;
+  flex: none;
+  margin: 1px 0 0;
+  padding: 0;
+  accent-color: #397356;
+}
+.report-demo-toggle span,
+.report-demo-toggle strong,
+.report-demo-toggle small {
+  display: block;
+}
+.report-demo-toggle strong {
+  color: #354239;
+  font-size: 11px;
+}
+.report-demo-toggle small {
+  margin-top: 3px;
+  color: #7b857e;
+  font-size: 10px;
+  line-height: 1.45;
 }
 .officer-disclaimer {
   margin: 3px 0 0;
@@ -322,8 +343,5 @@
   .officer-panel,
   .officer-login-panel {
     padding: 19px 16px;
-  }
-  .coordinate-inputs {
-    grid-template-columns: 1fr 1fr;
   }
 }

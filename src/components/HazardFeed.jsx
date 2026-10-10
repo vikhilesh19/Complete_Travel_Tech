@@ -30,19 +30,50 @@ function HazardFeed({ hazards, loading, error }) {
             <article className="hazard-report" key={report.id}>
               <div className="hazard-report-title">
                 <span
-                  className={`hazard-severity hazard-severity-${report.severity.toLowerCase()}`}
+                  className={`hazard-severity hazard-severity-${report.severity.toLowerCase().split(" ")[0]}`}
                 >
                   <AlertTriangle size={14} /> {report.severity}
                 </span>
-                <span className="hazard-report-source">OFFICER REPORT</span>
+                <span
+                  className={`hazard-report-source ${report.is_demo ? "is-demo" : "is-official"}`}
+                >
+                  {report.is_demo ? "DEMO ALERT" : "OFFICIAL ALERT"}
+                </span>
               </div>
               <h3>{report.hazard}</h3>
               <p className="hazard-report-location">
-                <MapPin size={13} /> {report.location}
+                <MapPin size={13} /> {report.affected_zone || report.location}
               </p>
-              <p className="hazard-report-description">{report.description}</p>
+              <p className="hazard-report-description">
+                {report.alert_text || report.description}
+              </p>
+              <div className="hazard-report-dates">
+                <span>
+                  <strong>Expected onset</strong>
+                  {report.onset_at
+                    ? new Date(report.onset_at).toLocaleString()
+                    : "Not specified"}
+                </span>
+                <span>
+                  <strong>Expires</strong>
+                  {report.expires_at
+                    ? new Date(report.expires_at).toLocaleString()
+                    : "Not specified"}
+                </span>
+              </div>
+              <div className="hazard-report-attribution">
+                <span>
+                  <strong>Source</strong>
+                  {report.source || "Officer report"}
+                </span>
+                {report.source_url && (
+                  <a href={report.source_url} target="_blank" rel="noreferrer">
+                    View source
+                  </a>
+                )}
+              </div>
               <div className="hazard-report-time">
-                <Clock3 size={12} />{" "}
+                <Clock3 size={12} /> Published{" "}
                 {new Date(report.created_at).toLocaleString()}
               </div>
             </article>
@@ -50,8 +81,8 @@ function HazardFeed({ hazards, loading, error }) {
         </div>
       )}
       <p className="hazard-feed-disclaimer">
-        Officer-submitted reports are shared information, not independently
-        verified emergency alerts.
+        Published alerts are shared as submitted. Check the linked issuing
+        authority source before acting.
       </p>
     </section>
   );

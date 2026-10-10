@@ -174,12 +174,10 @@ app.post("/api/officer/register/send-otp", async (req, res) => {
     });
   }
   if (!process.env.SESSION_SECRET || !mailTransport()) {
-    return res
-      .status(503)
-      .json({
-        error:
-          "Email verification is not configured. Set SMTP account credentials and SESSION_SECRET.",
-      });
+    return res.status(503).json({
+      error:
+        "Email verification is not configured. Set SMTP account credentials and SESSION_SECRET.",
+    });
   }
 
   try {
@@ -201,11 +199,9 @@ app.post("/api/officer/register/send-otp", async (req, res) => {
       pending.rows[0] &&
       Date.now() - new Date(pending.rows[0].last_sent_at).getTime() < 60_000
     ) {
-      return res
-        .status(429)
-        .json({
-          error: "Please wait 60 seconds before requesting another code.",
-        });
+      return res.status(429).json({
+        error: "Please wait 60 seconds before requesting another code.",
+      });
     }
 
     const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
@@ -252,12 +248,10 @@ app.post("/api/officer/register/send-otp", async (req, res) => {
         "Unable to send officer verification email:",
         error.message,
       );
-      return res
-        .status(503)
-        .json({
-          error:
-            "Could not send the verification email. Check the SMTP settings and try again.",
-        });
+      return res.status(503).json({
+        error:
+          "Could not send the verification email. Check the SMTP settings and try again.",
+      });
     }
     return res.json({
       message: "Verification code sent. Check your email inbox.",
@@ -309,11 +303,9 @@ app.post("/api/officer/register", async (req, res) => {
         [email],
       );
       await client.query("COMMIT");
-      return res
-        .status(400)
-        .json({
-          error: "That code expired or is no longer valid. Request a new code.",
-        });
+      return res.status(400).json({
+        error: "That code expired or is no longer valid. Request a new code.",
+      });
     }
     if (!safeEqual(otpDigest(email, code), record.otp_hash)) {
       const attempts = record.attempts + 1;
@@ -329,14 +321,12 @@ app.post("/api/officer/register", async (req, res) => {
         );
       }
       await client.query("COMMIT");
-      return res
-        .status(400)
-        .json({
-          error:
-            attempts >= 5
-              ? "Too many incorrect codes. Request a new code."
-              : `Incorrect code. ${5 - attempts} attempts remaining.`,
-        });
+      return res.status(400).json({
+        error:
+          attempts >= 5
+            ? "Too many incorrect codes. Request a new code."
+            : `Incorrect code. ${5 - attempts} attempts remaining.`,
+      });
     }
 
     const registered = await client.query(
@@ -386,8 +376,12 @@ app.post("/api/officer/logout", (_req, res) => {
 app.get("/api/hazards", async (_req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, hazard, location, description, severity, latitude, longitude, created_at
-       FROM hazards ORDER BY created_at DESC`,
+      `SELECT id, hazard, location, description, severity, latitude, longitude,
+              affected_zone, alert_text, onset_at, expires_at, source, source_url,
+              is_demo, created_at
+      FROM hazards
+      WHERE expires_at IS NOT NULL AND expires_at > NOW()
+      ORDER BY created_at DESC`,
     );
     return res.json(result.rows);
   } catch (error) {
@@ -399,21 +393,59 @@ app.get("/api/hazards", async (_req, res) => {
 });
 
 app.post("/api/hazards", requireOfficer, async (req, res) => {
-  const { hazard, location, description, severity, latitude, longitude } =
-    req.body || {};
+  const {
+    hazard,
+    affectedZone,
+    alertText,
+    severity,
+    onsetAt,
+    expiresAt,
+    source,
+    sourceUrl,
+    isDemo,
+    latitude,
+    longitude,
+  } = req.body || {};
+  const location = affectedZone;
+  const description = alertText;
   const lat = Number(latitude);
   const lon = Number(longitude);
+  const onset = new Date(onsetAt);
+  const expiry = new Date(expiresAt);
   if (
     typeof hazard !== "string" ||
-    hazard.trim().length < 2 ||
+    ![
+      "Cyclone",
+      "Flood",
+      "Landslide",
+      "Storm surge",
+      "Heat wave",
+      "Other",
+    ].includes(hazard) ||
     hazard.length > 80 ||
     typeof location !== "string" ||
     location.trim().length < 2 ||
     location.length > 120 ||
     typeof description !== "string" ||
-    description.trim().length < 3 ||
-    description.length > 500 ||
-    !["Low", "Moderate", "High", "Severe"].includes(severity) ||
+    description.trim().length < 10 ||
+    description.length > 5000 ||
+    ![
+      "Danger (red)",
+      "Warning (orange)",
+      "Advisory (yellow)",
+      "Information (blue)",
+    ].includes(severity) ||
+    !Number.isFinite(onset.getTime()) ||
+    !Number.isFinite(expiry.getTime()) ||
+    onset >= expiry ||
+    expiry <= new Date() ||
+    typeof source !== "string" ||
+    source.trim().length < 2 ||
+    source.length > 160 ||
+    typeof sourceUrl !== "string" ||
+    sourceUrl.length > 500 ||
+    !/^https?:\/\//i.test(sourceUrl) ||
+    typeof isDemo !== "boolean" ||
     !Number.isFinite(lat) ||
     lat < -90 ||
     lat > 90 ||
@@ -429,9 +461,13 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO hazards (hazard, location, description, severity, latitude, longitude, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, hazard, location, description, severity, latitude, longitude, created_at`,
+      `INSERT INTO hazards
+        (hazard, location, description, severity, latitude, longitude, created_by,
+         affected_zone, alert_text, onset_at, expires_at, source, source_url, is_demo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING id, hazard, location, description, severity, latitude, longitude,
+                 affected_zone, alert_text, onset_at, expires_at, source, source_url,
+                 is_demo, created_at`,
       [
         hazard.trim(),
         location.trim(),
@@ -440,6 +476,13 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
         lat,
         lon,
         req.officer,
+        location.trim(),
+        description.trim(),
+        onset.toISOString(),
+        expiry.toISOString(),
+        source.trim(),
+        sourceUrl.trim(),
+        isDemo,
       ],
     );
     return res.status(201).json(result.rows[0]);
@@ -459,12 +502,50 @@ async function start() {
         hazard VARCHAR(80) NOT NULL,
         location VARCHAR(120) NOT NULL,
         description VARCHAR(500) NOT NULL,
-        severity VARCHAR(16) NOT NULL CHECK (severity IN ('Low', 'Moderate', 'High', 'Severe')),
+        severity VARCHAR(32) NOT NULL,
         latitude DOUBLE PRECISION NOT NULL CHECK (latitude BETWEEN -90 AND 90),
         longitude DOUBLE PRECISION NOT NULL CHECK (longitude BETWEEN -180 AND 180),
         created_by VARCHAR(120) NOT NULL,
+        affected_zone VARCHAR(120),
+        alert_text TEXT,
+        onset_at TIMESTAMPTZ,
+        expires_at TIMESTAMPTZ,
+        source VARCHAR(160),
+        source_url VARCHAR(500),
+        is_demo BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+    await pool.query(`
+      ALTER TABLE hazards
+        ADD COLUMN IF NOT EXISTS affected_zone VARCHAR(120),
+        ADD COLUMN IF NOT EXISTS alert_text TEXT,
+        ADD COLUMN IF NOT EXISTS onset_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS source VARCHAR(160),
+        ADD COLUMN IF NOT EXISTS source_url VARCHAR(500),
+        ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT TRUE
+    `);
+    await pool.query(
+      "ALTER TABLE hazards DROP CONSTRAINT IF EXISTS hazards_severity_check",
+    );
+    await pool.query(`
+      UPDATE hazards SET severity = CASE severity
+        WHEN 'Low' THEN 'Information (blue)'
+        WHEN 'Moderate' THEN 'Advisory (yellow)'
+        WHEN 'High' THEN 'Warning (orange)'
+        WHEN 'Severe' THEN 'Danger (red)'
+        ELSE severity
+      END
+      WHERE severity IN ('Low', 'Moderate', 'High', 'Severe')
+    `);
+    await pool.query(`
+      ALTER TABLE hazards ADD CONSTRAINT hazards_severity_check
+      CHECK (severity IN ('Danger (red)', 'Warning (orange)', 'Advisory (yellow)', 'Information (blue)'))
+    `);
+    await pool.query(`
+      UPDATE hazards SET affected_zone = COALESCE(affected_zone, location),
+                          alert_text = COALESCE(alert_text, description)
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS officer_accounts (

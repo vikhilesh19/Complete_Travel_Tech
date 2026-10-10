@@ -36,6 +36,10 @@ function App() {
   const [hazards, setHazards] = useState([]);
   const [hazardsLoading, setHazardsLoading] = useState(true);
   const [hazardsError, setHazardsError] = useState("");
+  const [expiryCheckTime, setExpiryCheckTime] = useState(0);
+  const activeHazards = hazards.filter(
+    (hazard) => Date.parse(hazard.expires_at) > expiryCheckTime,
+  );
 
   const t = translations[lang] || translations.en;
   const currentPlaceData = t.places[activePlace] || t.places.kerala;
@@ -91,6 +95,21 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const initialCheck = window.setTimeout(
+      () => setExpiryCheckTime(Date.now()),
+      0,
+    );
+    const timer = window.setInterval(
+      () => setExpiryCheckTime(Date.now()),
+      5000,
+    );
+    return () => {
+      window.clearTimeout(initialCheck);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => setNotice(""), 3200);
     return () => window.clearTimeout(timer);
@@ -108,11 +127,7 @@ function App() {
       status: "Open · local demo only",
     };
     setHelpRequests((current) => [request, ...current]);
-    setNotice(
-      type === "safe"
-        ? t.toasts.safeNotice
-        : t.toasts.helpNotice,
-    );
+    setNotice(type === "safe" ? t.toasts.safeNotice : t.toasts.helpNotice);
   }
 
   function addHazard(hazard) {
@@ -125,11 +140,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar
-        activeView={activeView}
-        onChange={setActiveView}
-        t={t.sidebar}
-      />
+      <Sidebar activeView={activeView} onChange={setActiveView} t={t.sidebar} />
       <div className="app-main">
         <Topbar
           place={place}
@@ -142,7 +153,7 @@ function App() {
         {activeView === "authority" ? (
           <OfficerDashboard
             place={place}
-            hazards={hazards}
+            hazards={activeHazards}
             onHazardAdded={addHazard}
             onNotice={setNotice}
           />
@@ -158,16 +169,14 @@ function App() {
                   <br />
                   <span>{t.welcome.titleLine2}</span>
                 </h1>
-                <p className="welcome-copy">
-                  {t.welcome.subtitle}
-                </p>
+                <p className="welcome-copy">{t.welcome.subtitle}</p>
               </div>
               <div className="trust-chip">
                 <span className="trust-dot" /> {t.welcome.trustChip}
               </div>
             </section>
             <HazardFeed
-              hazards={hazards}
+              hazards={activeHazards}
               loading={hazardsLoading}
               error={hazardsError}
             />
@@ -183,7 +192,7 @@ function App() {
               />
             </section>
             <section className="map-help-grid">
-              <MapView place={place} hazards={hazards} t={t.map} />
+              <MapView place={place} hazards={activeHazards} t={t.map} />
               <HelpPanel onSend={sendHelp} t={t.help} />
             </section>
             <AskSafety placeName={place.name} t={t.askSafety} />
@@ -215,10 +224,12 @@ function App() {
                   </div>
                 </div>
                 <p>
-                  <span className="source-check">✓</span> {t.trustSources.weatherSource}
+                  <span className="source-check">✓</span>{" "}
+                  {t.trustSources.weatherSource}
                 </p>
                 <p>
-                  <span className="source-pending">i</span> {t.trustSources.hazardSource}
+                  <span className="source-pending">i</span>{" "}
+                  {t.trustSources.hazardSource}
                 </p>
               </div>
             </section>

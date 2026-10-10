@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  LogIn,
-  LogOut,
-  MapPin,
-  ShieldCheck,
-} from "lucide-react";
+import { AlertTriangle, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import "./OfficerDashboard.css";
 
 async function readApiResponse(response) {
@@ -41,13 +35,37 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
     email: "",
   });
   const [report, setReport] = useState({
-    hazard: "Flooding",
-    location: place.shortName,
-    description: "",
-    severity: "Moderate",
+    hazard: "Cyclone",
+    severity: "Danger (red)",
+    affectedZone: "",
+    alertText: "",
+    onsetAt: "",
+    expiresAt: "",
+    source: "Kerala State Disaster Management Authority",
+    sourceUrl: "https://sdma.kerala.gov.in",
+    isDemo: true,
     latitude: place.coords[0],
     longitude: place.coords[1],
   });
+
+  const zoneOptions = [
+    {
+      name: `${place.keralaName || "Kerala coast"} · Kochi`,
+      coords: [9.9312, 76.2673],
+    },
+    {
+      name: `${place.keralaName || "Kerala coast"} · Alappuzha`,
+      coords: [9.4981, 76.3388],
+    },
+    {
+      name: `${place.wayanadName || "Wayanad hills"} · Meppadi`,
+      coords: [11.5544, 76.132],
+    },
+    {
+      name: `${place.wayanadName || "Wayanad hills"} · Mananthavady`,
+      coords: [11.8009, 75.9996],
+    },
+  ];
 
   useEffect(() => {
     let mounted = true;
@@ -127,13 +145,21 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
 
   async function submitHazard(event) {
     event.preventDefault();
+    if (new Date(report.onsetAt) >= new Date(report.expiresAt)) {
+      setError("Expiry date and time must be later than the expected onset.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const response = await fetch("/api/hazards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(report),
+        body: JSON.stringify({
+          ...report,
+          onsetAt: new Date(report.onsetAt).toISOString(),
+          expiresAt: new Date(report.expiresAt).toISOString(),
+        }),
       });
       const data = await readApiResponse(response);
       if (!response.ok)
@@ -328,83 +354,144 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
               </div>
             </div>
             <form className="officer-form report-form" onSubmit={submitHazard}>
-              <label htmlFor="report-hazard">Hazard type</label>
-              <input
-                id="report-hazard"
-                maxLength="80"
-                required
-                value={report.hazard}
-                onChange={(event) =>
-                  setReport({ ...report, hazard: event.target.value })
-                }
-              />
-              <label htmlFor="report-location">Place or area</label>
-              <input
-                id="report-location"
-                maxLength="120"
-                required
-                value={report.location}
-                onChange={(event) =>
-                  setReport({ ...report, location: event.target.value })
-                }
-              />
-              <label htmlFor="report-description">Short description</label>
-              <textarea
-                id="report-description"
-                maxLength="500"
-                minLength="3"
-                required
-                rows="3"
-                value={report.description}
-                onChange={(event) =>
-                  setReport({ ...report, description: event.target.value })
-                }
-                placeholder="What is happening, and what should travelers know?"
-              />
-              <label htmlFor="report-severity">Severity</label>
-              <select
-                id="report-severity"
-                value={report.severity}
-                onChange={(event) =>
-                  setReport({ ...report, severity: event.target.value })
-                }
-              >
-                <option>Low</option>
-                <option>Moderate</option>
-                <option>High</option>
-                <option>Severe</option>
-              </select>
-              <span className="coordinate-label">
-                <MapPin size={14} /> Map coordinates
-              </span>
-              <div className="coordinate-inputs">
-                <label htmlFor="report-latitude">Latitude</label>
-                <input
-                  id="report-latitude"
-                  type="number"
-                  min="-90"
-                  max="90"
-                  step="any"
-                  required
-                  value={report.latitude}
+              <div className="report-field">
+                <label htmlFor="report-hazard">Hazard</label>
+                <select
+                  id="report-hazard"
+                  value={report.hazard}
                   onChange={(event) =>
-                    setReport({ ...report, latitude: event.target.value })
+                    setReport({ ...report, hazard: event.target.value })
                   }
-                />
-                <label htmlFor="report-longitude">Longitude</label>
-                <input
-                  id="report-longitude"
-                  type="number"
-                  min="-180"
-                  max="180"
-                  step="any"
-                  required
-                  value={report.longitude}
+                >
+                  <option>Cyclone</option>
+                  <option>Flood</option>
+                  <option>Landslide</option>
+                  <option>Storm surge</option>
+                  <option>Heat wave</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="report-field">
+                <label htmlFor="report-severity">Severity</label>
+                <select
+                  id="report-severity"
+                  value={report.severity}
                   onChange={(event) =>
-                    setReport({ ...report, longitude: event.target.value })
+                    setReport({ ...report, severity: event.target.value })
+                  }
+                >
+                  <option>Danger (red)</option>
+                  <option>Warning (orange)</option>
+                  <option>Advisory (yellow)</option>
+                  <option>Information (blue)</option>
+                </select>
+              </div>
+              <div className="report-field report-full-width">
+                <label htmlFor="report-zone">Affected zone</label>
+                <select
+                  id="report-zone"
+                  required
+                  value={report.affectedZone}
+                  onChange={(event) => {
+                    const selected = zoneOptions.find(
+                      (zone) => zone.name === event.target.value,
+                    );
+                    setReport({
+                      ...report,
+                      affectedZone: event.target.value,
+                      latitude: selected?.coords[0] ?? place.coords[0],
+                      longitude: selected?.coords[1] ?? place.coords[1],
+                    });
+                  }}
+                >
+                  <option value="">Select a zone</option>
+                  {zoneOptions.map((zone) => (
+                    <option key={zone.name}>{zone.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="report-field report-full-width">
+                <label htmlFor="report-alert-text">Official alert text</label>
+                <textarea
+                  id="report-alert-text"
+                  maxLength={5000}
+                  minLength={10}
+                  required
+                  rows={4}
+                  value={report.alertText}
+                  onChange={(event) =>
+                    setReport({ ...report, alertText: event.target.value })
+                  }
+                  placeholder="Paste the official bulletin text exactly as issued."
+                />
+              </div>
+              <div className="report-field">
+                <label htmlFor="report-onset">Expected onset</label>
+                <input
+                  id="report-onset"
+                  type="datetime-local"
+                  required
+                  value={report.onsetAt}
+                  onChange={(event) =>
+                    setReport({ ...report, onsetAt: event.target.value })
                   }
                 />
               </div>
+              <div className="report-field">
+                <label htmlFor="report-expires">Expires</label>
+                <input
+                  id="report-expires"
+                  type="datetime-local"
+                  required
+                  value={report.expiresAt}
+                  onChange={(event) =>
+                    setReport({ ...report, expiresAt: event.target.value })
+                  }
+                />
+              </div>
+              <div className="report-field">
+                <label htmlFor="report-source">Source</label>
+                <input
+                  id="report-source"
+                  maxLength={160}
+                  required
+                  value={report.source}
+                  onChange={(event) =>
+                    setReport({ ...report, source: event.target.value })
+                  }
+                />
+              </div>
+              <div className="report-field">
+                <label htmlFor="report-source-url">Source URL</label>
+                <input
+                  id="report-source-url"
+                  type="url"
+                  maxLength={500}
+                  required
+                  value={report.sourceUrl}
+                  onChange={(event) =>
+                    setReport({ ...report, sourceUrl: event.target.value })
+                  }
+                />
+              </div>
+              <label className="report-demo-toggle report-full-width">
+                <input
+                  type="checkbox"
+                  checked={report.isDemo}
+                  onChange={(event) =>
+                    setReport({ ...report, isDemo: event.target.checked })
+                  }
+                />
+                <span>
+                  <strong>Demo alert</strong>
+                  <small>
+                    Shown to travelers with a “DEMO ALERT” label. Uncheck only
+                    for real official alerts.
+                  </small>
+                </span>
+              </label>
+              <input type="hidden" value={report.latitude} readOnly />
+              <input type="hidden" value={report.longitude} readOnly />
               {error && (
                 <p className="officer-error" role="alert">
                   {error}
