@@ -42,7 +42,9 @@
 }
 .map-frame {
   position: relative;
+  flex: 1 1 auto;
   height: 302px;
+  min-height: 302px;
   overflow: hidden;
   border-radius: 13px;
   background: #dce5df;
@@ -209,6 +211,7 @@
   }
   .map-frame {
     height: 260px;
+    min-height: 260px;
   }
   .map-legend {
     gap: 10px;

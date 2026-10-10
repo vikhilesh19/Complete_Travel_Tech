@@ -46,6 +46,10 @@ function MapView({
       scrollWheelZoom: false,
     }).setView(place.coords, place.zoom);
     mapInstance.current = map;
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize({ pan: false });
+    });
+    resizeObserver.observe(mapElement.current);
     if (!offline) {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
@@ -93,6 +97,7 @@ function MapView({
       .bindPopup(text.demoMarkerPopup);
 
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapInstance.current = null;
     };
