@@ -2,6 +2,11 @@
 
 Wayfinder is a traveler-safety web application for understanding local hazard reports during severe weather. It brings officer-submitted reports, map context, translated guidance, and offline reference information into one interface.
 
+Demo Vedio Link : https://drive.google.com/file/d/1h0kHFV4D4xGlf_OLjO5FPe6MwV2rhLp6/view?usp=sharing
+For Checking officer Details you may use this credentials : 
+user name : Vikhilesh
+password : Vikhilesh@Vikhilesh
+
 > **Safety notice:** This project is a prototype, not an emergency service. Scenario content is illustrative. Officer-submitted reports are not independently verified and must not be treated as official warnings. Follow local authorities and contact emergency services directly.
 
 ## Problem
@@ -128,7 +133,7 @@ The full Express API in `server/index.js` provides:
 The separate Vercel function currently exposes only `GET /api/health`.
 
 ## SMS notifications
-
+We Will Modify it after sometime due to govt rules we cannot directly send sms      
 SMS is optional and disabled unless all Twilio variables are configured on the application API. Travelers select a region, enter an international-format phone number, consent, and verify ownership. Verified subscribers receive notifications for reports in that region. Demo reports are labeled as demos; other officer reports are identified as unverified. A signed inbound Twilio message containing `STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, or `QUIT` removes that number's subscriptions.
 
 Twilio Verify and messaging are paid services; carrier availability and rates vary. Translations use an external Google Translate endpoint when available and can fall back to English. SMS delivery has not been live-tested in this repository's environment.
