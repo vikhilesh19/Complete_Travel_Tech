@@ -8,6 +8,25 @@ import {
 } from "lucide-react";
 import "./OfficerDashboard.css";
 
+async function readApiResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const body = await response.text();
+    if (
+      body.trimStart().startsWith("<!doctype html") ||
+      body.trimStart().startsWith("<html")
+    ) {
+      throw new Error(
+        "The API server did not answer this request. Restart the app with npm run dev.",
+      );
+    }
+    throw new Error(
+      "The server returned an unexpected response. Check that the API is running.",
+    );
+  }
+  return response.json();
+}
+
 function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   const [officer, setOfficer] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -58,7 +77,7 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(credentials),
         });
-        const data = await response.json();
+        const data = await readApiResponse(response);
         if (!response.ok)
           throw new Error(data.error || "Could not send verification code.");
         setOtpSent(true);
@@ -75,7 +94,7 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
           ),
         },
       );
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok)
         throw new Error(
           data.error ||
@@ -92,7 +111,9 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
       );
     } catch (requestError) {
       setError(
-        requestError.message || "Could not connect to the officer service.",
+        requestError instanceof TypeError
+          ? "Cannot reach the API. Make sure npm run dev is still running, then try again."
+          : requestError.message || "Could not connect to the officer service.",
       );
     } finally {
       setBusy(false);
@@ -114,7 +135,7 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(report),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok)
         throw new Error(data.error || "Hazard report could not be saved.");
       onHazardAdded(data);

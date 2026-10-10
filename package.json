@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k \"npm:api\" \"npm:dev:web\"",
+    "dev:web": "vite",
     "api": "node server/index.js",
-    "dev:full": "concurrently -k \"npm:api\" \"npm:dev\"",
+    "dev:full": "npm run dev",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
