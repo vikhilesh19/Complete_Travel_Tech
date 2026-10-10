@@ -9,49 +9,57 @@ import HelpPanel from "./components/HelpPanel.jsx";
 import AskSafety from "./components/AskSafety.jsx";
 import OfficerDashboard from "./components/OfficerDashboard.jsx";
 import HazardFeed from "./components/HazardFeed.jsx";
+import { translations } from "./translations.js";
 
-const places = {
+const placeConfig = {
   kerala: {
-    name: "Kerala coast",
-    shortName: "Kochi, Kerala",
     coords: [9.9312, 76.2673],
     zoom: 9,
-    alert: {
-      hazard: "Coastal flooding",
-      severity: "High",
-      zone: "Fort Kochi · Ernakulam coast",
-      time: "Demo scenario · 10:30 AM",
-      action: "Move inland from the shoreline and avoid low-lying roads.",
-    },
-    mapLabel: "Fort Kochi",
-    road: "Coastal road · illustrative status",
   },
   wayanad: {
-    name: "Wayanad hills",
-    shortName: "Meppadi, Wayanad",
     coords: [11.5544, 76.132],
     zoom: 10,
-    alert: {
-      hazard: "Landslide risk",
-      severity: "High",
-      zone: "Meppadi · Wayanad district",
-      time: "Demo scenario · 11:05 AM",
-      action: "Keep clear of steep slopes and use only confirmed open routes.",
-    },
-    mapLabel: "Meppadi",
-    road: "Meppadi–Chooralmala · illustrative status",
   },
 };
 
 function App() {
   const [activeView, setActiveView] = useState("overview");
   const [activePlace, setActivePlace] = useState("kerala");
+  const [lang, setLang] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("wayfinder_lang") || "en";
+    }
+    return "en";
+  });
   const [, setHelpRequests] = useState([]);
   const [notice, setNotice] = useState("");
   const [hazards, setHazards] = useState([]);
   const [hazardsLoading, setHazardsLoading] = useState(true);
   const [hazardsError, setHazardsError] = useState("");
-  const place = places[activePlace];
+
+  const t = translations[lang] || translations.en;
+  const currentPlaceData = t.places[activePlace] || t.places.kerala;
+
+  const place = {
+    ...placeConfig[activePlace],
+    ...currentPlaceData,
+    alert: {
+      hazard: currentPlaceData.hazard,
+      severity: currentPlaceData.severity,
+      zone: currentPlaceData.zone,
+      time: currentPlaceData.time,
+      action: currentPlaceData.action,
+    },
+    keralaName: t.places.kerala.name,
+    wayanadName: t.places.wayanad.name,
+  };
+
+  function handleLanguageChange(newLang) {
+    setLang(newLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("wayfinder_lang", newLang);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -102,8 +110,8 @@ function App() {
     setHelpRequests((current) => [request, ...current]);
     setNotice(
       type === "safe"
-        ? "You’re marked safe on this device."
-        : "Help request saved on this device only.",
+        ? t.toasts.safeNotice
+        : t.toasts.helpNotice,
     );
   }
 
@@ -117,12 +125,19 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar activeView={activeView} onChange={setActiveView} />
+      <Sidebar
+        activeView={activeView}
+        onChange={setActiveView}
+        t={t.sidebar}
+      />
       <div className="app-main">
         <Topbar
           place={place}
           activePlace={activePlace}
           onPlaceChange={setActivePlace}
+          lang={lang}
+          onLanguageChange={handleLanguageChange}
+          t={t.topbar}
         />
         {activeView === "authority" ? (
           <OfficerDashboard
@@ -136,19 +151,19 @@ function App() {
             <section className="welcome-row">
               <div>
                 <p className="eyebrow">
-                  TRAVELER SAFETY · {place.name.toUpperCase()}
+                  {t.welcome.eyebrow} · {place.name.toUpperCase()}
                 </p>
                 <h1>
-                  Know what’s happening.
+                  {t.welcome.titleLine1}
                   <br />
-                  <span>Choose your next step.</span>
+                  <span>{t.welcome.titleLine2}</span>
                 </h1>
                 <p className="welcome-copy">
-                  Local conditions and official guidance, in one place.
+                  {t.welcome.subtitle}
                 </p>
               </div>
               <div className="trust-chip">
-                <span className="trust-dot" /> Source-aware updates
+                <span className="trust-dot" /> {t.welcome.trustChip}
               </div>
             </section>
             <HazardFeed
@@ -160,22 +175,26 @@ function App() {
               className="alert-weather-grid"
               aria-label="Current conditions"
             >
-              <AlertCard alert={place.alert} />
-              <WeatherCard coords={place.coords} placeName={place.shortName} />
+              <AlertCard alert={place.alert} t={t.alertCard} />
+              <WeatherCard
+                coords={place.coords}
+                placeName={place.shortName}
+                t={t.weather}
+              />
             </section>
             <section className="map-help-grid">
-              <MapView place={place} hazards={hazards} />
-              <HelpPanel onSend={sendHelp} />
+              <MapView place={place} hazards={hazards} t={t.map} />
+              <HelpPanel onSend={sendHelp} t={t.help} />
             </section>
-            <AskSafety placeName={place.name} />
+            <AskSafety placeName={place.name} t={t.askSafety} />
             <section className="bottom-grid">
               <div className="info-panel road-panel">
                 <div className="panel-heading">
                   <div>
-                    <p className="eyebrow">ROUTE NOTE</p>
-                    <h2>Road status</h2>
+                    <p className="eyebrow">{t.routeNote.eyebrow}</p>
+                    <h2>{t.routeNote.heading}</h2>
                   </div>
-                  <span className="demo-tag">DEMO DATA</span>
+                  <span className="demo-tag">{t.routeNote.demoData}</span>
                 </div>
                 <div className="road-row">
                   <span className="road-icon">
@@ -183,25 +202,23 @@ function App() {
                   </span>
                   <div>
                     <strong>{place.road}</strong>
-                    <p>Illustrative only · confirm locally before travel</p>
+                    <p>{t.routeNote.caution}</p>
                   </div>
-                  <span className="road-state">Unverified</span>
+                  <span className="road-state">{t.routeNote.unverified}</span>
                 </div>
               </div>
               <div className="info-panel source-panel" id="source-note">
                 <div className="panel-heading">
                   <div>
-                    <p className="eyebrow">TRUST & SOURCES</p>
-                    <h2>What’s verified</h2>
+                    <p className="eyebrow">{t.trustSources.eyebrow}</p>
+                    <h2>{t.trustSources.heading}</h2>
                   </div>
                 </div>
                 <p>
-                  <span className="source-check">✓</span> Weather from
-                  Open-Meteo · live API
+                  <span className="source-check">✓</span> {t.trustSources.weatherSource}
                 </p>
                 <p>
-                  <span className="source-pending">i</span> Hazard alert · demo
-                  scenario, not an official feed
+                  <span className="source-pending">i</span> {t.trustSources.hazardSource}
                 </p>
               </div>
             </section>

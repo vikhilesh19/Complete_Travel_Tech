@@ -1,7 +1,22 @@
 import { Check, LifeBuoy, Phone, Radio, ShieldCheck } from "lucide-react";
 import "./HelpPanel.css";
 
-function HelpPanel({ onSend }) {
+function HelpPanel({ onSend, t }) {
+  const text = t || {
+    eyebrow: "QUICK RESPONSE",
+    heading: "Let someone know",
+    intro: "These actions stay on this device in the demo. No location is shared.",
+    imSafe: "I’m safe",
+    imSafeSub: "Mark yourself as safe",
+    needHelp: "I need help",
+    needHelpSub: "Send a help request",
+    callback: "Request a callback",
+    callbackSub: "Ask an operator to contact you",
+    callEmergency: "Call India emergency services",
+    emergencyNumber: "112",
+    caveat: "For immediate danger, call 112 directly. Demo requests are not sent to responders.",
+  };
+
   return (
     <section className="help-panel">
       <div className="help-panel-heading">
@@ -9,13 +24,11 @@ function HelpPanel({ onSend }) {
           <LifeBuoy size={18} />
         </span>
         <div>
-          <p className="eyebrow">QUICK RESPONSE</p>
-          <h2>Let someone know</h2>
+          <p className="eyebrow">{text.eyebrow}</p>
+          <h2>{text.heading}</h2>
         </div>
       </div>
-      <p className="help-intro">
-        These actions stay on this device in the demo. No location is shared.
-      </p>
+      <p className="help-intro">{text.intro}</p>
       <div className="help-actions">
         <button
           className="help-action safe-action"
@@ -25,8 +38,8 @@ function HelpPanel({ onSend }) {
             <ShieldCheck size={16} />
           </span>
           <span>
-            <strong>I’m safe</strong>
-            <small>Mark yourself as safe</small>
+            <strong>{text.imSafe}</strong>
+            <small>{text.imSafeSub}</small>
           </span>
           <Check className="action-arrow" size={15} />
         </button>
@@ -38,8 +51,8 @@ function HelpPanel({ onSend }) {
             <Radio size={16} />
           </span>
           <span>
-            <strong>I need help</strong>
-            <small>Send a help request</small>
+            <strong>{text.needHelp}</strong>
+            <small>{text.needHelpSub}</small>
           </span>
           <span className="action-arrow">›</span>
         </button>
@@ -51,21 +64,18 @@ function HelpPanel({ onSend }) {
             <Phone size={15} />
           </span>
           <span>
-            <strong>Request a callback</strong>
-            <small>Ask an operator to contact you</small>
+            <strong>{text.callback}</strong>
+            <small>{text.callbackSub}</small>
           </span>
           <span className="action-arrow">›</span>
         </button>
       </div>
       <a className="emergency-call" href="tel:112">
         <Phone size={15} />
-        <span>Call India emergency services</span>
-        <strong>112</strong>
+        <span>{text.callEmergency}</span>
+        <strong>{text.emergencyNumber}</strong>
       </a>
-      <p className="help-caveat">
-        For immediate danger, call 112 directly. Demo requests are not sent to
-        responders.
-      </p>
+      <p className="help-caveat">{text.caveat}</p>
     </section>
   );
 }

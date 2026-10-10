@@ -1,12 +1,24 @@
 import { Compass, LifeBuoy, MapPinned, ShieldCheck } from "lucide-react";
 import "./Sidebar.css";
 
-const navItems = [
-  { id: "overview", label: "Traveler view", icon: Compass },
-  { id: "authority", label: "Officer login", icon: ShieldCheck },
-];
+function Sidebar({ activeView, onChange, t }) {
+  const text = t || {
+    brandSub: "TRAVEL SAFETY",
+    workspace: "WORKSPACE",
+    overview: "Traveler view",
+    authority: "Officer login",
+    officialSourcesFirst: "Official sources first",
+    distinguishVerified: "We distinguish verified updates from demo information.",
+    emergencyInIndia: "Emergency in India",
+    emergencyNumber: "112",
+    footer: "WAYFINDER · HACKATHON DEMO",
+  };
 
-function Sidebar({ activeView, onChange }) {
+  const navItems = [
+    { id: "overview", label: text.overview, icon: Compass },
+    { id: "authority", label: text.authority, icon: ShieldCheck },
+  ];
+
   return (
     <aside className="sidebar">
       <a
@@ -20,10 +32,10 @@ function Sidebar({ activeView, onChange }) {
         </span>
         <span>
           <strong>wayfinder</strong>
-          <small>TRAVEL SAFETY</small>
+          <small>{text.brandSub}</small>
         </span>
       </a>
-      <div className="sidebar-section-label">WORKSPACE</div>
+      <div className="sidebar-section-label">{text.workspace}</div>
       <nav className="side-nav" aria-label="Main navigation">
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
@@ -41,16 +53,16 @@ function Sidebar({ activeView, onChange }) {
           <span className="safety-card-icon">
             <ShieldCheck size={17} />
           </span>
-          <strong>Official sources first</strong>
-          <p>We distinguish verified updates from demo information.</p>
+          <strong>{text.officialSourcesFirst}</strong>
+          <p>{text.distinguishVerified}</p>
         </div>
         <div className="sidebar-help-link">
           <LifeBuoy size={15} />
-          <span>Emergency in India</span>
-          <strong>112</strong>
+          <span>{text.emergencyInIndia}</span>
+          <strong>{text.emergencyNumber}</strong>
         </div>
         <div className="sidebar-footer">
-          WAYFINDER <span>·</span> HACKATHON DEMO
+          {text.footer}
         </div>
       </div>
     </aside>

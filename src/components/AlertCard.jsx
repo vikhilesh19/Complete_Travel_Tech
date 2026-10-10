@@ -1,18 +1,26 @@
 import { ArrowUpRight, Clock3, Waves } from "lucide-react";
 import "./AlertCard.css";
 
-function AlertCard({ alert }) {
+function AlertCard({ alert, t }) {
+  const text = t || {
+    activeScenario: "ACTIVE SCENARIO",
+    demoAlert: "DEMO ALERT",
+    hazardSuffix: "illustrative hazard",
+    sourceDetails: "Source details",
+    tooltip: "DEMO ALERT · Not an official warning",
+  };
+
   return (
     <article className="alert-card">
       <div className="alert-card-top">
         <span className="alert-type">
-          <Waves size={15} /> ACTIVE SCENARIO
+          <Waves size={15} /> {text.activeScenario}
         </span>
-        <span className="demo-tag alert-demo-tag">DEMO ALERT</span>
+        <span className="demo-tag alert-demo-tag">{text.demoAlert}</span>
       </div>
       <div className="alert-card-content">
         <div className="alert-severity">
-          {alert.severity} <span>· illustrative hazard</span>
+          {alert.severity} <span>· {text.hazardSuffix}</span>
         </div>
         <h2>{alert.hazard}</h2>
         <p className="alert-zone">{alert.zone}</p>
@@ -22,8 +30,8 @@ function AlertCard({ alert }) {
         <span>
           <Clock3 size={13} /> {alert.time}
         </span>
-        <a href="#source-note" title="DEMO ALERT · Not an official warning">
-          Source details <ArrowUpRight size={13} />
+        <a href="#source-note" title={text.tooltip}>
+          {text.sourceDetails} <ArrowUpRight size={13} />
         </a>
       </div>
     </article>

@@ -4,7 +4,25 @@ import "leaflet/dist/leaflet.css";
 import { Layers2, LocateFixed } from "lucide-react";
 import "./MapView.css";
 
-function MapView({ place, hazards }) {
+function MapView({ place, hazards, t }) {
+  const text = t || {
+    eyebrow: "AREA OVERVIEW",
+    demoLabel: "DEMO + OFFICER REPORTS",
+    recenter: "Recenter map",
+    layerLabel: "OpenStreetMap",
+    legendZone: "Illustrative hazard zone",
+    legendPlace: "Demo location marker",
+    legendOfficer: "Officer reports",
+    disclaimer: "Reports are not verified alert boundaries",
+    demoZonePopup: "Illustrative demo zone",
+    demoZoneSub: "not an official alert boundary",
+    demoAlertPopup: "DEMO ALERT",
+    notOfficialWarning: "not an official warning",
+    demoMarkerPopup: "Demo map marker · not a verified shelter",
+    officerReport: "Officer report",
+    severity: "Severity",
+  };
+
   const mapElement = useRef(null);
   const mapInstance = useRef(null);
   const hazardLayer = useRef(null);
@@ -45,12 +63,12 @@ function MapView({ place, hazards }) {
     })
       .addTo(map)
       .bindPopup(
-        `<strong>Illustrative demo zone</strong><br>${place.mapLabel} · not an official alert boundary`,
+        `<strong>${text.demoZonePopup}</strong><br>${place.mapLabel} · ${text.demoZoneSub}`,
       );
     L.marker(place.coords, { icon: alertMarker })
       .addTo(map)
       .bindPopup(
-        `<strong>DEMO ALERT</strong><br>${place.alert.hazard} · not an official warning`,
+        `<strong>${text.demoAlertPopup}</strong><br>${place.alert.hazard} · ${text.notOfficialWarning}`,
       );
     const demoOffset = place.zoom === 9 ? [0.038, 0.052] : [0.028, 0.045];
     L.marker(
@@ -58,13 +76,13 @@ function MapView({ place, hazards }) {
       { icon: demoMarker },
     )
       .addTo(map)
-      .bindPopup("Demo map marker · not a verified shelter");
+      .bindPopup(text.demoMarkerPopup);
 
     return () => {
       map.remove();
       mapInstance.current = null;
     };
-  }, [place]);
+  }, [place, text]);
 
   useEffect(() => {
     const map = mapInstance.current;
@@ -90,13 +108,13 @@ function MapView({ place, hazards }) {
       );
       const popup = document.createElement("div");
       const title = document.createElement("strong");
-      title.textContent = `${hazard.hazard} · Officer report`;
+      title.textContent = `${hazard.hazard} · ${text.officerReport}`;
       const location = document.createElement("p");
       location.textContent = hazard.location;
       const description = document.createElement("p");
       description.textContent = hazard.description;
       const severity = document.createElement("small");
-      severity.textContent = `Severity: ${hazard.severity}`;
+      severity.textContent = `${text.severity}: ${hazard.severity}`;
       popup.append(title, location, description, severity);
       marker.addTo(layer).bindPopup(popup);
     });
@@ -105,7 +123,7 @@ function MapView({ place, hazards }) {
       layer.remove();
       hazardLayer.current = null;
     };
-  }, [hazards, place]);
+  }, [hazards, place, text]);
 
   function recenter() {
     mapInstance.current?.setView(place.coords, place.zoom, { animate: true });
@@ -115,11 +133,11 @@ function MapView({ place, hazards }) {
     <section className="map-panel" aria-label={`Map of ${place.name}`}>
       <div className="map-panel-heading">
         <div>
-          <p className="eyebrow">AREA OVERVIEW</p>
+          <p className="eyebrow">{text.eyebrow}</p>
           <h2>{place.name}</h2>
         </div>
         <span className="map-demo-label">
-          <span /> DEMO + OFFICER REPORTS
+          <span /> {text.demoLabel}
         </span>
       </div>
       <div className="map-frame">
@@ -127,31 +145,31 @@ function MapView({ place, hazards }) {
         <button
           className="map-recenter"
           onClick={recenter}
-          aria-label="Recenter map"
-          title="Recenter map"
+          aria-label={text.recenter}
+          title={text.recenter}
         >
           <LocateFixed size={16} />
         </button>
         <div className="map-layer-label">
-          <Layers2 size={13} /> OpenStreetMap
+          <Layers2 size={13} /> {text.layerLabel}
         </div>
       </div>
       <div className="map-legend">
         <span>
           <i className="legend-zone" />
-          Illustrative hazard zone
+          {text.legendZone}
         </span>
         <span>
           <i className="legend-place" />
-          Demo location marker
+          {text.legendPlace}
         </span>
         {hazards.length > 0 && (
           <span>
-            <i className="legend-officer" /> Officer reports
+            <i className="legend-officer" /> {text.legendOfficer}
           </span>
         )}
         <span className="map-disclaimer">
-          Reports are not verified alert boundaries
+          {text.disclaimer}
         </span>
       </div>
     </section>

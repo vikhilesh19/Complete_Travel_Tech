@@ -26,7 +26,18 @@ const weatherCodes = {
   99: "Thunderstorm",
 };
 
-function WeatherCard({ coords, placeName }) {
+function WeatherCard({ coords, placeName, t }) {
+  const text = t || {
+    eyebrow: "LIVE WEATHER · OPEN-METEO",
+    humidity: "humidity",
+    wind: "wind",
+    observed: "Observed",
+    feelsLike: "Feels like",
+    sourceNote: "Live API · not a hazard warning",
+    fetching: "Fetching current conditions…",
+    unavailable: "Weather unavailable. Check your connection.",
+  };
+
   const [result, setResult] = useState(null);
   const placeKey = `${coords[0]},${coords[1]}`;
 
@@ -66,11 +77,12 @@ function WeatherCard({ coords, placeName }) {
         minute: "2-digit",
       })
     : "";
+
   return (
     <article className="weather-card">
       <div className="weather-card-head">
         <div>
-          <p className="eyebrow">LIVE WEATHER · OPEN-METEO</p>
+          <p className="eyebrow">{text.eyebrow}</p>
           <h2>{placeName}</h2>
         </div>
         <span className="weather-icon">
@@ -86,15 +98,15 @@ function WeatherCard({ coords, placeName }) {
           <div className="weather-details">
             <span>
               <Droplets size={13} />
-              {weather.relative_humidity_2m}% humidity
+              {weather.relative_humidity_2m}% {text.humidity}
             </span>
             <span>
               <Wind size={13} />
-              {Math.round(weather.wind_speed_10m)} km/h wind
+              {Math.round(weather.wind_speed_10m)} km/h {text.wind}
             </span>
           </div>
           <div className="weather-observed">
-            Observed {observedAt} · Feels like{" "}
+            {text.observed} {observedAt} · {text.feelsLike}{" "}
             {Math.round(weather.apparent_temperature)}°
           </div>
         </>
@@ -102,15 +114,14 @@ function WeatherCard({ coords, placeName }) {
         <div className={`weather-state ${state}`} aria-live="polite">
           {state === "loading" ? (
             <>
-              <RefreshCw size={13} className="spin" /> Fetching current
-              conditions…
+              <RefreshCw size={13} className="spin" /> {text.fetching}
             </>
           ) : (
-            "Weather unavailable. Check your connection."
+            text.unavailable
           )}
         </div>
       )}
-      <div className="weather-source">Live API · not a hazard warning</div>
+      <div className="weather-source">{text.sourceNote}</div>
     </article>
   );
 }

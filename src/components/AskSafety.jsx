@@ -2,10 +2,18 @@ import { useState } from "react";
 import { ArrowUpRight, Info, MessageCircleQuestion } from "lucide-react";
 import "./AskSafety.css";
 
-const noOfficialInformation =
-  "No official information yet for this area. Follow local authority instructions.";
+function AskSafety({ placeName, t }) {
+  const text = t || {
+    eyebrow: "ASK ABOUT YOUR AREA",
+    heading: "Is this safe?",
+    prompt: "Ask about conditions near {place}. Answers use official alert data only.",
+    ariaLabel: "Ask a safety question",
+    placeholder: "e.g. Is it safe to travel to the coast?",
+    submitTitle: "Submit question",
+    noInfo: "No official information yet for this area. Follow local authority instructions.",
+    subInfo: "No official alert service is connected in this demo. Demo scenarios are not used to answer safety questions.",
+  };
 
-function AskSafety({ placeName }) {
   const [question, setQuestion] = useState("");
   const [submittedQuestion, setSubmittedQuestion] = useState("");
 
@@ -17,6 +25,8 @@ function AskSafety({ placeName }) {
     setQuestion("");
   }
 
+  const promptText = text.prompt.replace("{place}", placeName);
+
   return (
     <section className="ask-safety-panel">
       <div className="ask-safety-heading">
@@ -24,30 +34,27 @@ function AskSafety({ placeName }) {
           <MessageCircleQuestion size={18} />
         </span>
         <div>
-          <p className="eyebrow">ASK ABOUT YOUR AREA</p>
-          <h2>Is this safe?</h2>
+          <p className="eyebrow">{text.eyebrow}</p>
+          <h2>{text.heading}</h2>
         </div>
       </div>
       <div className="ask-safety-content">
-        <p>
-          Ask about conditions near {placeName}. Answers use official alert data
-          only.
-        </p>
+        <p>{promptText}</p>
         <form className="ask-safety-form" onSubmit={handleSubmit}>
           <label className="sr-only" htmlFor="safety-question">
-            Ask a safety question
+            {text.ariaLabel}
           </label>
           <input
             id="safety-question"
             maxLength={240}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="e.g. Is it safe to travel to the coast?"
+            placeholder={text.placeholder}
           />
           <button
             type="submit"
-            aria-label="Submit safety question"
-            title="Submit question"
+            aria-label={text.ariaLabel}
+            title={text.submitTitle}
           >
             <ArrowUpRight size={17} />
           </button>
@@ -60,11 +67,8 @@ function AskSafety({ placeName }) {
             {submittedQuestion && (
               <p className="asked-question">“{submittedQuestion}”</p>
             )}
-            <strong>{noOfficialInformation}</strong>
-            <small>
-              No official alert service is connected in this demo. Demo
-              scenarios are not used to answer safety questions.
-            </small>
+            <strong>{text.noInfo}</strong>
+            <small>{text.subInfo}</small>
           </div>
         </div>
       </div>
