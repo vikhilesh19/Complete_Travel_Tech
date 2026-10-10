@@ -392,22 +392,6 @@ function App() {
           />
         ) : (
           <main className="page-content">
-            <section className="welcome-row">
-              <div>
-                <p className="eyebrow">
-                  {t.welcome.eyebrow} · {place.name.toUpperCase()}
-                </p>
-                <h1>
-                  {t.welcome.titleLine1}
-                  <br />
-                  <span>{t.welcome.titleLine2}</span>
-                </h1>
-                <p className="welcome-copy">{t.welcome.subtitle}</p>
-              </div>
-              <div className="trust-chip">
-                <span className="trust-dot" /> {t.welcome.trustChip}
-              </div>
-            </section>
             <OfflineSavePanel
               onSave={saveCurrentAreaOffline}
               savedAt={savedSnapshot?.savedAt}

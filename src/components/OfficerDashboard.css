@@ -211,6 +211,29 @@
 .officer-help-row time {
   text-align: right;
 }
+.officer-help-sorted {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #cddfd0;
+  color: #376d4c;
+  background: #eef5ee;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.officer-help-sorted:hover {
+  color: #fff;
+  background: #376d54;
+}
+.officer-help-sorted:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
 .officer-help-note {
   margin: 12px 0 0;
   color: #858f88;
@@ -387,5 +410,12 @@
   .officer-panel,
   .officer-login-panel {
     padding: 19px 16px;
+  }
+  .officer-help-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .officer-help-row time {
+    margin-left: auto;
   }
 }

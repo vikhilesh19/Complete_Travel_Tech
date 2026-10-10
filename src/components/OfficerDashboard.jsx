@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import "./OfficerDashboard.css";
 
 async function readApiResponse(response) {
@@ -31,6 +31,7 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   const [otp, setOtp] = useState("");
   const [helpQueue, setHelpQueue] = useState([]);
   const [helpQueueError, setHelpQueueError] = useState("");
+  const [sortingRequestId, setSortingRequestId] = useState(null);
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
@@ -171,6 +172,27 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   async function signOut() {
     await fetch("/api/officer/logout", { method: "POST" });
     setOfficer(null);
+  }
+
+  async function markRequestSorted(requestId) {
+    setSortingRequestId(requestId);
+    setHelpQueueError("");
+    try {
+      const response = await fetch(`/api/officer/help-queue/${requestId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await readApiResponse(response);
+        throw new Error(data.error || "Could not clear this request.");
+      }
+      setHelpQueue((current) =>
+        current.filter((request) => request.id !== requestId),
+      );
+    } catch (queueError) {
+      setHelpQueueError(queueError.message || "Could not clear this request.");
+    } finally {
+      setSortingRequestId(null);
+    }
   }
 
   async function submitHazard(event) {
@@ -410,6 +432,18 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
                     <time dateTime={request.created_at}>
                       {new Date(request.created_at).toLocaleString()}
                     </time>
+                    <button
+                      className="officer-help-sorted"
+                      type="button"
+                      disabled={sortingRequestId === request.id}
+                      onClick={() => markRequestSorted(request.id)}
+                      aria-label={`Mark ${request.action} request sorted`}
+                    >
+                      <Check size={14} />
+                      {sortingRequestId === request.id
+                        ? "Saving…"
+                        : "Mark sorted"}
+                    </button>
                   </article>
                 ))}
               </div>

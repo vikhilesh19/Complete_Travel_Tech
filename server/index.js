@@ -228,12 +228,16 @@ app.delete("/api/officer/help-queue/:id", requireOfficer, async (req, res) => {
       [id],
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Help request was already cleared." });
+      return res
+        .status(404)
+        .json({ error: "Help request was already cleared." });
     }
     return res.status(204).end();
   } catch (error) {
     console.error("Unable to clear officer help request:", error.message);
-    return res.status(503).json({ error: "Help request could not be cleared." });
+    return res
+      .status(503)
+      .json({ error: "Help request could not be cleared." });
   }
 });
 
