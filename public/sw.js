@@ -24,6 +24,14 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "WAYFINDER_HAZARD_DELETED") {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => cache.delete("/api/hazards")),
+    );
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (
@@ -35,12 +43,14 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(request.url);
   if (requestUrl.pathname.startsWith("/api/officer/")) return;
   if (PUBLIC_GET_ENDPOINTS.has(requestUrl.pathname)) {
+    const forceRefresh = request.headers.get("X-Wayfinder-Refresh") === "1";
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
         try {
           const response = await fetch(request);
           if (!response.ok) {
+            if (forceRefresh) return response;
             const saved = await cache.match(request);
             if (saved) {
               const headers = new Headers(saved.headers);
@@ -61,9 +71,13 @@ self.addEventListener("fetch", (event) => {
             statusText: response.statusText,
             headers,
           });
-          await cache.put(request, savedResponse.clone());
+          await cache.put(
+            `${requestUrl.origin}${requestUrl.pathname}${requestUrl.search}`,
+            savedResponse.clone(),
+          );
           return savedResponse;
         } catch {
+          if (forceRefresh) return Response.error();
           const saved = await cache.match(request);
           if (!saved) return Response.error();
           const headers = new Headers(saved.headers);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Sidebar from "./components/Sidebar.jsx";
 import Topbar from "./components/Topbar.jsx";
@@ -36,6 +36,8 @@ const placeConfig = {
 };
 
 function App() {
+  const deletedHazardIds = useRef(new Set());
+  const hazardChannel = useRef(null);
   const [activeView, setActiveView] = useState("overview");
   const [activePlace, setActivePlace] = useState(() => {
     if (typeof window === "undefined") return "kerala";
@@ -81,6 +83,12 @@ function App() {
     lastSavedAt &&
     expiryCheckTime - Date.parse(lastSavedAt) > 6 * 60 * 60 * 1000;
 
+  function excludeDeletedHazards(items) {
+    return items.filter(
+      (hazard) => !deletedHazardIds.current.has(String(hazard.id)),
+    );
+  }
+
   const t = translations[lang] || translations.en;
   const currentPlaceData = t.places[activePlace] || t.places.kerala;
 
@@ -117,12 +125,14 @@ function App() {
     let mounted = true;
     async function loadHazards() {
       try {
-        const response = await fetch("/api/hazards");
+        const response = await fetch("/api/hazards", {
+          headers: { "X-Wayfinder-Refresh": "1" },
+        });
         const data = await response.json();
         if (!response.ok)
           throw new Error(data.error || "Shared reports are unavailable.");
         if (mounted) {
-          setHazards(data);
+          setHazards(excludeDeletedHazards(data));
           const cachedAt = response.headers.get("X-Wayfinder-Cached-At");
           setHazardsOffline(
             response.headers.get("X-Wayfinder-Offline") === "1",
@@ -134,7 +144,9 @@ function App() {
         try {
           const snapshot = await getAreaSnapshot(activePlace);
           if (mounted && snapshot) {
-            setHazards(snapshot.hazards?.data || []);
+            setHazards(
+              excludeDeletedHazards(snapshot.hazards?.data || []),
+            );
             setHazardsOffline(true);
             setHazardsSavedAt(snapshot.hazards?.savedAt || snapshot.savedAt);
             setHazardsError("");
@@ -158,17 +170,48 @@ function App() {
     }
     loadHazards();
     const refresh = window.setInterval(loadHazards, 30000);
+    window.addEventListener("focus", loadHazards);
     return () => {
       mounted = false;
       window.clearInterval(refresh);
+      window.removeEventListener("focus", loadHazards);
     };
   }, [activePlace]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return undefined;
+    const channel = new BroadcastChannel("wayfinder-hazards");
+    hazardChannel.current = channel;
+    channel.onmessage = (event) => {
+      if (event.data?.type === "deleted" && event.data.id) {
+        removeHazard(event.data.id, false);
+      }
+    };
+    return () => {
+      channel.close();
+      hazardChannel.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
     getAreaSnapshot(activePlace)
       .then((snapshot) => {
-        if (active) setSavedSnapshot(snapshot || null);
+        if (active && snapshot?.hazards?.data) {
+          const filteredSnapshot = {
+            ...snapshot,
+            hazards: {
+              ...snapshot.hazards,
+              data: excludeDeletedHazards(snapshot.hazards.data),
+            },
+          };
+          setSavedSnapshot(filteredSnapshot);
+          if (filteredSnapshot.hazards.data.length !== snapshot.hazards.data.length) {
+            saveAreaSnapshot(filteredSnapshot).catch(() => {});
+          }
+        } else if (active) {
+          setSavedSnapshot(snapshot || null);
+        }
       })
       .catch(() => {
         if (active) setSavedSnapshot(null);
@@ -303,9 +346,11 @@ function App() {
     setHazardsError("");
   }
 
-  function removeHazard(hazardId) {
+  function removeHazard(hazardId, broadcast = true) {
+    const id = String(hazardId);
+    deletedHazardIds.current.add(id);
     setHazards((current) =>
-      current.filter((hazard) => String(hazard.id) !== String(hazardId)),
+      current.filter((hazard) => String(hazard.id) !== id),
     );
     setSavedSnapshot((current) => {
       if (!current?.hazards?.data) return current;
@@ -314,13 +359,36 @@ function App() {
         hazards: {
           ...current.hazards,
           data: current.hazards.data.filter(
-            (hazard) => String(hazard.id) !== String(hazardId),
+            (hazard) => String(hazard.id) !== id,
           ),
         },
       };
       saveAreaSnapshot(updatedSnapshot).catch(() => {});
       return updatedSnapshot;
     });
+    if (broadcast) {
+      hazardChannel.current?.postMessage({ type: "deleted", id });
+      navigator.serviceWorker?.controller?.postMessage({
+        type: "WAYFINDER_HAZARD_DELETED",
+        id,
+      });
+      for (const areaId of ["kerala", "wayanad"]) {
+        getAreaSnapshot(areaId)
+          .then((snapshot) => {
+            if (!snapshot?.hazards?.data) return;
+            return saveAreaSnapshot({
+              ...snapshot,
+              hazards: {
+                ...snapshot.hazards,
+                data: snapshot.hazards.data.filter(
+                  (hazard) => String(hazard.id) !== id,
+                ),
+              },
+            });
+          })
+          .catch(() => {});
+      }
+    }
   }
 
   async function saveCurrentAreaOffline() {
