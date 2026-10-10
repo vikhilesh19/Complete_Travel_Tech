@@ -29,6 +29,8 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   const [authMode, setAuthMode] = useState("login");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [helpQueue, setHelpQueue] = useState([]);
+  const [helpQueueError, setHelpQueueError] = useState("");
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
@@ -82,6 +84,34 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!officer) return undefined;
+
+    let active = true;
+    async function loadHelpQueue() {
+      try {
+        const response = await fetch("/api/officer/help-queue");
+        const data = await readApiResponse(response);
+        if (!response.ok)
+          throw new Error(data.error || "Could not load help queue.");
+        if (active) {
+          setHelpQueue(data);
+          setHelpQueueError("");
+        }
+      } catch (queueError) {
+        if (active)
+          setHelpQueueError(queueError.message || "Could not load help queue.");
+      }
+    }
+
+    loadHelpQueue();
+    const refresh = window.setInterval(loadHelpQueue, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(refresh);
+    };
+  }, [officer]);
 
   async function authenticate(event) {
     event.preventDefault();
@@ -343,6 +373,52 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
               Reports are saved to PostgreSQL and visible to every visitor.
             </span>
           </div>
+          <section className="officer-panel officer-help-queue">
+            <div className="officer-panel-heading">
+              <div>
+                <p className="eyebrow">TOURIST ASSISTANCE</p>
+                <h2>Help requests</h2>
+              </div>
+              <span className="queue-count">{helpQueue.length}</span>
+            </div>
+            {helpQueueError ? (
+              <p className="officer-error" role="status">
+                {helpQueueError}
+              </p>
+            ) : helpQueue.length === 0 ? (
+              <p className="officer-description">
+                No tourist help actions have been received.
+              </p>
+            ) : (
+              <div className="officer-help-list">
+                {helpQueue.map((request) => (
+                  <article className="officer-help-row" key={request.id}>
+                    <div>
+                      <strong>
+                        {request.action === "help"
+                          ? "NEEDS HELP"
+                          : request.action === "callback"
+                            ? "CALLBACK REQUEST"
+                            : "MARKED SAFE"}
+                      </strong>
+                      <span>
+                        {request.area_id === "wayanad"
+                          ? "Wayanad hills"
+                          : "Kerala coast"}
+                      </span>
+                    </div>
+                    <time dateTime={request.created_at}>
+                      {new Date(request.created_at).toLocaleString()}
+                    </time>
+                  </article>
+                ))}
+              </div>
+            )}
+            <p className="officer-help-note">
+              Actions are shared without names or precise location. This queue
+              refreshes automatically.
+            </p>
+          </section>
           <section className="officer-panel report-panel">
             <div className="officer-panel-heading">
               <span className="report-icon">

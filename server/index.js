@@ -17,6 +17,7 @@ const sessionLifetimeSeconds = 8 * 60 * 60;
 const sessionCookieName = "wayfinder_officer";
 const translationCache = new Map();
 const translationRequests = new Map();
+const helpActionRequests = new Map();
 
 app.use(express.json({ limit: "16kb" }));
 
@@ -96,6 +97,59 @@ app.post("/api/translate-alert", async (req, res) => {
   }
 });
 
+app.post("/api/help-queue", async (req, res) => {
+  const { id, action, areaId, createdAt } = req.body || {};
+  const created = new Date(createdAt);
+  if (
+    typeof id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    ) ||
+    !["safe", "help", "callback"].includes(action) ||
+    !["kerala", "wayanad"].includes(areaId) ||
+    !Number.isFinite(created.getTime()) ||
+    created.getTime() > Date.now() + 5 * 60_000
+  ) {
+    return res.status(400).json({ error: "Invalid help action." });
+  }
+
+  const now = Date.now();
+  const requester = req.ip || "unknown";
+  const recent = (helpActionRequests.get(requester) || []).filter(
+    (time) => now - time < 60_000,
+  );
+  if (recent.length >= 30) {
+    return res
+      .status(429)
+      .json({ error: "Too many help actions. Try again shortly." });
+  }
+  recent.push(now);
+  helpActionRequests.set(requester, recent);
+
+  try {
+    await pool.query(
+      `INSERT INTO tourist_help_actions (id, action, area_id, created_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [id, action, areaId, created.toISOString()],
+    );
+    return res.status(202).json({ accepted: true, id });
+  } catch (error) {
+    console.error("Unable to store tourist help action:", error.message);
+    return res
+      .status(503)
+      .json({ error: "Help action could not be delivered yet." });
+  }
+});
+
+app.get("/api/public-config", (_req, res) => {
+  const configuredNumber = (process.env.SMS_HELP_NUMBER || "").trim();
+  const smsHelpNumber = /^\+?[1-9]\d{6,14}$/.test(configuredNumber)
+    ? configuredNumber
+    : "";
+  return res.json({ smsHelpNumber });
+});
+
 function safeEqual(first, second) {
   const firstBuffer = Buffer.from(first);
   const secondBuffer = Buffer.from(second);
@@ -140,6 +194,48 @@ function requireOfficer(req, res, next) {
   req.officer = session.username;
   return next();
 }
+
+app.get("/api/officer/help-queue", requireOfficer, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, action, area_id, created_at, received_at
+       FROM tourist_help_actions
+       ORDER BY received_at DESC
+       LIMIT 100`,
+    );
+    return res.json(result.rows);
+  } catch (error) {
+    console.error("Unable to load officer help queue:", error.message);
+    return res
+      .status(503)
+      .json({ error: "Help queue is temporarily unavailable." });
+  }
+});
+
+app.delete("/api/officer/help-queue/:id", requireOfficer, async (req, res) => {
+  const { id } = req.params;
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    )
+  ) {
+    return res.status(400).json({ error: "Invalid help request ID." });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM tourist_help_actions WHERE id = $1 RETURNING id",
+      [id],
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Help request was already cleared." });
+    }
+    return res.status(204).end();
+  } catch (error) {
+    console.error("Unable to clear officer help request:", error.message);
+    return res.status(503).json({ error: "Help request could not be cleared." });
+  }
+});
 
 function setSessionCookie(res, username) {
   const payload = Buffer.from(
@@ -653,6 +749,24 @@ async function start() {
         last_sent_at TIMESTAMPTZ NOT NULL
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tourist_help_actions (
+        id UUID PRIMARY KEY,
+        action VARCHAR(16) NOT NULL CHECK (action IN ('safe', 'help', 'callback')),
+        area_id VARCHAR(16) NOT NULL CHECK (area_id IN ('kerala', 'wayanad')),
+        created_at TIMESTAMPTZ NOT NULL,
+        received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await pool.query(
+      "ALTER TABLE tourist_help_actions ALTER COLUMN action TYPE VARCHAR(16)",
+    );
+    await pool.query(
+      "ALTER TABLE tourist_help_actions DROP CONSTRAINT IF EXISTS tourist_help_actions_action_check",
+    );
+    await pool.query(
+      "ALTER TABLE tourist_help_actions ADD CONSTRAINT tourist_help_actions_action_check CHECK (action IN ('safe', 'help', 'callback'))",
+    );
     console.log("PostgreSQL hazard table is ready.");
   } catch (error) {
     console.error("PostgreSQL is not available yet:", error.message);

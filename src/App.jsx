@@ -9,7 +9,16 @@ import HelpPanel from "./components/HelpPanel.jsx";
 import AskSafety from "./components/AskSafety.jsx";
 import OfficerDashboard from "./components/OfficerDashboard.jsx";
 import HazardFeed from "./components/HazardFeed.jsx";
+import OfflineSavePanel from "./components/OfflineSavePanel.jsx";
 import { hazardReportTranslations, translations } from "./translations.js";
+import {
+  getAreaSnapshot,
+  getQueuedHelpActions,
+  queueHelpAction,
+  removeQueuedHelpAction,
+  saveAreaSnapshot,
+} from "./offlineStore.js";
+import "./OfflineStatusBanner.css";
 
 const placeConfig = {
   kerala: {
@@ -24,22 +33,49 @@ const placeConfig = {
 
 function App() {
   const [activeView, setActiveView] = useState("overview");
-  const [activePlace, setActivePlace] = useState("kerala");
+  const [activePlace, setActivePlace] = useState(() => {
+    if (typeof window === "undefined") return "kerala";
+    const requestedArea = new URLSearchParams(window.location.search).get(
+      "area",
+    );
+    return Object.hasOwn(placeConfig, requestedArea) ? requestedArea : "kerala";
+  });
   const [lang, setLang] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("wayfinder_lang") || "en";
     }
     return "en";
   });
-  const [, setHelpRequests] = useState([]);
   const [notice, setNotice] = useState("");
   const [hazards, setHazards] = useState([]);
   const [hazardsLoading, setHazardsLoading] = useState(true);
   const [hazardsError, setHazardsError] = useState("");
+  const [hazardsOffline, setHazardsOffline] = useState(false);
+  const [hazardsSavedAt, setHazardsSavedAt] = useState(null);
+  const [weatherByArea, setWeatherByArea] = useState({});
+  const [pendingHelpActions, setPendingHelpActions] = useState([]);
+  const [smsHelpNumber, setSmsHelpNumber] = useState("");
+  const [savedSnapshot, setSavedSnapshot] = useState(null);
+  const [savingOffline, setSavingOffline] = useState(false);
+  const [offlineSaveError, setOfflineSaveError] = useState("");
+  const [isOnline, setIsOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine,
+  );
   const [expiryCheckTime, setExpiryCheckTime] = useState(0);
   const activeHazards = hazards.filter(
     (hazard) => Date.parse(hazard.expires_at) > expiryCheckTime,
   );
+  const lastSavedAt = savedSnapshot?.savedAt || hazardsSavedAt;
+  const offlineDataShown = !isOnline || hazardsOffline;
+  const savedTimeLabel = lastSavedAt
+    ? new Date(lastSavedAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  const savedDataIsOld =
+    lastSavedAt &&
+    expiryCheckTime - Date.parse(lastSavedAt) > 6 * 60 * 60 * 1000;
 
   const t = translations[lang] || translations.en;
   const currentPlaceData = t.places[activePlace] || t.places.kerala;
@@ -65,6 +101,14 @@ function App() {
     }
   }
 
+  function handlePlaceChange(newPlace) {
+    if (!Object.hasOwn(placeConfig, newPlace)) return;
+    setActivePlace(newPlace);
+    const url = new URL(window.location.href);
+    url.searchParams.set("area", newPlace);
+    window.history.replaceState({}, "", url);
+  }
+
   useEffect(() => {
     let mounted = true;
     async function loadHazards() {
@@ -75,13 +119,35 @@ function App() {
           throw new Error(data.error || "Shared reports are unavailable.");
         if (mounted) {
           setHazards(data);
+          const cachedAt = response.headers.get("X-Wayfinder-Cached-At");
+          setHazardsOffline(
+            response.headers.get("X-Wayfinder-Offline") === "1",
+          );
+          setHazardsSavedAt(cachedAt || null);
           setHazardsError("");
         }
       } catch {
-        if (mounted)
-          setHazardsError(
-            "Shared reports are unavailable. Check the API and PostgreSQL connection.",
-          );
+        try {
+          const snapshot = await getAreaSnapshot(activePlace);
+          if (mounted && snapshot) {
+            setHazards(snapshot.hazards?.data || []);
+            setHazardsOffline(true);
+            setHazardsSavedAt(snapshot.hazards?.savedAt || snapshot.savedAt);
+            setHazardsError("");
+          } else if (mounted) {
+            setHazards([]);
+            setHazardsOffline(true);
+            setHazardsSavedAt(null);
+            setHazardsError("No saved hazard reports for this area.");
+          }
+        } catch {
+          if (mounted) {
+            setHazards([]);
+            setHazardsOffline(true);
+            setHazardsSavedAt(null);
+            setHazardsError("No saved hazard reports for this area.");
+          }
+        }
       } finally {
         if (mounted) setHazardsLoading(false);
       }
@@ -92,7 +158,21 @@ function App() {
       mounted = false;
       window.clearInterval(refresh);
     };
-  }, []);
+  }, [activePlace]);
+
+  useEffect(() => {
+    let active = true;
+    getAreaSnapshot(activePlace)
+      .then((snapshot) => {
+        if (active) setSavedSnapshot(snapshot || null);
+      })
+      .catch(() => {
+        if (active) setSavedSnapshot(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [activePlace]);
 
   useEffect(() => {
     const initialCheck = window.setTimeout(
@@ -110,24 +190,104 @@ function App() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    fetch("/api/public-config")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((config) => {
+        if (active && typeof config?.smsHelpNumber === "string") {
+          setSmsHelpNumber(config.smsHelpNumber);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function syncHelpQueue() {
+      let queued;
+      try {
+        queued = await getQueuedHelpActions();
+        if (active) setPendingHelpActions(queued);
+      } catch {
+        return;
+      }
+      if (!navigator.onLine || queued.length === 0) return;
+
+      for (const action of queued) {
+        try {
+          const response = await fetch("/api/help-queue", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(action),
+          });
+          if (response.ok) await removeQueuedHelpAction(action.id);
+        } catch {
+          break;
+        }
+      }
+      try {
+        const remaining = await getQueuedHelpActions();
+        if (active) setPendingHelpActions(remaining);
+      } catch {
+        // Keep the current pending state until storage can be read again.
+      }
+    }
+
+    syncHelpQueue();
+    window.addEventListener("online", syncHelpQueue);
+    return () => {
+      active = false;
+      window.removeEventListener("online", syncHelpQueue);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => setNotice(""), 3200);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  function sendHelp(type) {
-    const request = {
-      id: `local-${Date.now()}`,
-      type,
-      place: place.name,
-      createdAt: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      status: "Open · local demo only",
+  async function sendHelp(type) {
+    const action = {
+      id: crypto.randomUUID(),
+      action: type,
+      areaId: activePlace,
+      createdAt: new Date().toISOString(),
     };
-    setHelpRequests((current) => [request, ...current]);
-    setNotice(type === "safe" ? t.toasts.safeNotice : t.toasts.helpNotice);
+    try {
+      await queueHelpAction(action);
+      setPendingHelpActions((current) => [...current, action]);
+      setNotice("Waiting to send. This action is stored on this device.");
+      if (navigator.onLine) {
+        const response = await fetch("/api/help-queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action),
+        });
+        if (response.ok) {
+          await removeQueuedHelpAction(action.id);
+          setPendingHelpActions((current) =>
+            current.filter((item) => item.id !== action.id),
+          );
+          setNotice("Help action sent.");
+        }
+      }
+    } catch {
+      setNotice("Waiting to send. This action is stored on this device.");
+    }
   }
 
   function addHazard(hazard) {
@@ -138,6 +298,64 @@ function App() {
     setHazardsError("");
   }
 
+  async function saveCurrentAreaOffline() {
+    if (!navigator.onLine || offlineDataShown) {
+      setOfflineSaveError(
+        "Connect to the internet to refresh saved area information.",
+      );
+      return;
+    }
+    setSavingOffline(true);
+    setOfflineSaveError("");
+    const savedAt = new Date().toISOString();
+    const bounds =
+      activePlace === "kerala"
+        ? { south: 8, west: 74, north: 13.2, east: 77.8 }
+        : { south: 11, west: 75.4, north: 12.6, east: 76.7 };
+    const areaHazards = activeHazards.filter(
+      (hazard) =>
+        Number(hazard.latitude) >= bounds.south &&
+        Number(hazard.latitude) <= bounds.north &&
+        Number(hazard.longitude) >= bounds.west &&
+        Number(hazard.longitude) <= bounds.east,
+    );
+    const snapshot = {
+      areaId: activePlace,
+      savedAt,
+      hazards: { data: areaHazards, savedAt },
+      shelters: { data: [], available: false, savedAt },
+      roads: {
+        data: [{ name: place.road, status: "Unverified", isDemo: true }],
+        savedAt,
+      },
+      weather: {
+        data: weatherByArea[activePlace] || null,
+        savedAt,
+      },
+      emergencyNumbers: {
+        data: [{ label: t.help.callEmergency, number: "112" }],
+        savedAt,
+      },
+      safetyInstructions: {
+        data: [
+          { text: place.alert.action, isDemo: true, source: "Demo scenario" },
+        ],
+        savedAt,
+      },
+    };
+
+    try {
+      await saveAreaSnapshot(snapshot);
+      setSavedSnapshot(snapshot);
+    } catch (error) {
+      setOfflineSaveError(
+        error.message || "Could not save this area for offline use.",
+      );
+    } finally {
+      setSavingOffline(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <Sidebar activeView={activeView} onChange={setActiveView} t={t.sidebar} />
@@ -145,11 +363,26 @@ function App() {
         <Topbar
           place={place}
           activePlace={activePlace}
-          onPlaceChange={setActivePlace}
+          onPlaceChange={handlePlaceChange}
           lang={lang}
           onLanguageChange={handleLanguageChange}
           t={t.topbar}
         />
+        {offlineDataShown && (
+          <div className="offline-status-banner" role="status">
+            <strong>
+              {lastSavedAt
+                ? `You're offline. Showing information saved at ${savedTimeLabel}.`
+                : "You're offline. No information has been saved for this area."}
+            </strong>
+            {savedDataIsOld && (
+              <span>
+                Saved information is more than 6 hours old. Confirm current
+                conditions with local authorities.
+              </span>
+            )}
+          </div>
+        )}
         {activeView === "authority" ? (
           <OfficerDashboard
             place={place}
@@ -175,6 +408,13 @@ function App() {
                 <span className="trust-dot" /> {t.welcome.trustChip}
               </div>
             </section>
+            <OfflineSavePanel
+              onSave={saveCurrentAreaOffline}
+              savedAt={savedSnapshot?.savedAt}
+              saving={savingOffline}
+              disabled={!isOnline || offlineDataShown}
+              error={offlineSaveError}
+            />
             <HazardFeed
               hazards={activeHazards}
               loading={hazardsLoading}
@@ -193,6 +433,10 @@ function App() {
                 coords={place.coords}
                 placeName={place.shortName}
                 t={t.weather}
+                areaId={activePlace}
+                onWeatherLoaded={setWeatherByArea}
+                savedWeather={savedSnapshot?.weather}
+                offline={offlineDataShown}
               />
             </section>
             <section className="map-help-grid">
@@ -204,10 +448,23 @@ function App() {
                   hazardReportTranslations[lang] || hazardReportTranslations.en
                 }
                 lang={lang}
+                offline={offlineDataShown}
+                offlineSnapshot={savedSnapshot}
               />
-              <HelpPanel onSend={sendHelp} t={t.help} />
+              <HelpPanel
+                onSend={sendHelp}
+                pendingActions={pendingHelpActions}
+                areaName={place.shortName}
+                smsHelpNumber={smsHelpNumber}
+                t={t.help}
+              />
             </section>
-            <AskSafety placeName={place.name} t={t.askSafety} />
+            <AskSafety
+              placeName={place.name}
+              t={t.askSafety}
+              offline={offlineDataShown}
+              snapshot={savedSnapshot}
+            />
             <section className="bottom-grid">
               <div className="info-panel road-panel">
                 <div className="panel-heading">

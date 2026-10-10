@@ -17,10 +17,10 @@ The original scenario alert and map overlay remain illustrative and labeled as d
 - [x] Kerala coast and Wayanad hills scenarios with visible DEMO labels.
 - [x] OpenStreetMap map tiles and live Open-Meteo current weather.
 - [x] Safety question fixed fallback, local help actions, local request queue, and India emergency call link.
-- [x] PWA manifest and offline app-shell/static asset caching.
+- [x] PWA area QR links, IndexedDB offline snapshots, network-first public hazard/config reads, and queued help actions.
 - [ ] Official NDMA SACHET CAP or IMD alert ingestion, verified against a working official endpoint.
 - [ ] Replace the single configured officer credential with production identity management, role-based access, audit logs, and rate limiting.
-- [ ] Server-side translations/AI, Web Push, Telegram, rate limiting, persistent/offline data, and security tests.
+- [ ] Web Push, Telegram, production identity management, and expanded security tests.
 - [ ] Expo Go tourist client and installable Android package (Phase 2).
 - [ ] Public deployment URL and 2–5 minute demo video added to the repository.
 
@@ -35,7 +35,7 @@ cp .env.example .env
 npm run dev:full
 ```
 
-On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. Set `DATABASE_URL`, `OFFICER_USERNAME`, `OFFICER_PASSWORD`, `SESSION_SECRET`, and the SMTP settings in `.env` before starting. For Gmail, enable 2-Step Verification on `vikhileshkrishna@gmail.com` and create a Google App Password; put that value in `SMTP_PASSWORD`, not your regular Gmail password. `SMTP_FROM_NAME=Travel_tech` sets the sender display name. Gmail requires `SMTP_FROM_EMAIL` to be your Gmail address or a verified send-as alias. Set `SMTP_REPLY_TO` to a real no-reply address or alias you control; Gmail cannot send as an arbitrary unverified address. The API creates the `hazards`, `officer_accounts`, and OTP tables on startup. In the sidebar, open **Officer login**, choose **Register**, enter the officer email, username, and password, then request and verify the emailed code. Codes expire after 10 minutes and allow five attempts. Passwords are stored as bcrypt hashes; OTPs are stored as keyed hashes. Keep `.env` private; `.env.example` contains placeholders only. The Vite development server proxies `/api` to the Express server. In production, deploy the API behind the same origin as the frontend and provide the environment variables there.
+On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. Set `DATABASE_URL`, `OFFICER_USERNAME`, `OFFICER_PASSWORD`, `SESSION_SECRET`, and the SMTP settings in `.env` before starting. For Gmail, enable 2-Step Verification on `vikhileshkrishna@gmail.com` and create a Google App Password; put that value in `SMTP_PASSWORD`, not your regular Gmail password. `SMTP_FROM_NAME=Travel_tech` sets the sender display name. Gmail requires `SMTP_FROM_EMAIL` to be your Gmail address or a verified send-as alias. Set `SMTP_REPLY_TO` to a real no-reply address or alias you control; Gmail cannot send as an arbitrary unverified address. Set `SMS_HELP_NUMBER` only if you want the public SMS fallback link; leave it empty to hide that link. The API creates the hazards, officer, OTP, and tourist-help tables on startup. In the sidebar, open **Officer login**, choose **Register**, enter the officer email, username, and password, then request and verify the emailed code. Codes expire after 10 minutes and allow five attempts. Passwords are stored as bcrypt hashes; OTPs are stored as keyed hashes. Keep `.env` private; `.env.example` contains placeholders only. The Vite development server proxies `/api` to the Express server. In production, deploy the API behind the same origin as the frontend and provide the environment variables there.
 
 Build and serve the production bundle locally:
 
@@ -45,6 +45,15 @@ npm run preview
 ```
 
 The static frontend can be deployed to Vercel with `npm run build` and `dist` as the output directory. This does not create the Next.js API or Supabase services in the original design brief. A public deployment link and demo video still need to be created and added for the hackathon submission.
+
+## Offline use
+
+- Hotel QR links can point to `/?area=kerala` or `/?area=wayanad`; the area selector remains available as a manual fallback.
+- While online, open the desired area and choose **Save for offline**. Its hazards, available weather, road note, emergency number, and safety instruction are stored in this browser's IndexedDB with a saved timestamp. No shelter feed or road geometry is currently supplied, so the snapshot records shelters as unavailable and does not invent map features.
+- Test the installed service worker with `npm run build` followed by `npm run preview`. Load and save an area once online, then use browser DevTools Network → Offline and reload the preview URL. The banner shows the saved time and warns when the snapshot is over six hours old.
+- Offline maps use a plain background and saved geometry only; the app does not download OpenStreetMap tile sets. The current hazard feed provides points, not official zone polygons.
+- Offline safety answers use only saved, unexpired, non-demo reports. Otherwise the app displays: “No official information yet for this area. Follow local authority instructions.” Offline use cannot receive new alerts or verify current conditions.
+- “I’m safe” and “I need help” actions are stored locally and retried when connectivity returns. If `SMS_HELP_NUMBER` is configured, the app also offers a prefilled SMS link; the user must review and send it in their messaging app.
 
 ## Public APIs and libraries
 
@@ -56,7 +65,9 @@ The static frontend can be deployed to Vercel with `npm run build` and `dist` as
 - Lucide React: interface icons.
 - Google Fonts: DM Sans and Fraunces typefaces.
 
-No API keys or environment variables are required by this prototype. Open-Meteo and map requests require an internet connection. When the weather service is unavailable, the UI reports that it is unavailable instead of substituting fabricated values.
+Set `SMS_HELP_NUMBER` in the server `.env` to a public contact number in international format (for example `+919876543210`) to show the optional “Send help by SMS” link. Leave it empty to hide the link. The browser receives this public number through `/api/public-config`; no server secrets are sent to the client.
+
+No third-party API keys are required. The backend does require PostgreSQL, officer/session settings, and SMTP credentials for officer registration emails. Open-Meteo, map tiles, and automatic bulletin translation require an internet connection. Offline snapshots do not receive updates.
 
 ## Demo walkthrough
 
@@ -71,8 +82,8 @@ No API keys or environment variables are required by this prototype. Open-Meteo 
 - Replace the configured single officer credential with managed officer accounts, multi-factor authentication, role checks, and audit logs before production use.
 - Add validated alert normalization, geofencing, approved message templates, translations, source/timestamp presentation, and strict Gemini JSON handling only behind server routes. “Is this safe?” must continue to return the fixed fallback when no relevant official record exists.
 - Add RLS to every Supabase table, input validation, per-IP rate limiting, safe error handling, and logged-out authorization tests. Never put Gemini or Supabase service-role keys in a browser environment variable.
-- The service worker caches the app shell and same-origin static files only. It does not cache alerts, shelters, roads, weather, or help requests for offline use. Web Push, Telegram, Expo Go, and an installable Android APK are not implemented.
-- SMS and WhatsApp are rollout options only, not working features.
+- Offline snapshots are browser-local and are not synchronized between devices. Shelter/road geometry and automatic official alert ingestion are not provided by the current data sources.
+- Web Push, Telegram, WhatsApp, Expo Go, and an installable Android APK are not implemented.
 - Do not use this prototype to make real evacuation, route, shelter, or rescue decisions. Emergency services in India: **112**.
 - Minimize location collection in any future backend; prefer manual area selection. Explain location use and implement event-based deletion/anonymization for location and chat data.
 - Before real deployment, add signed official-source ingestion, audit logs, two-factor official login, privacy review, and moderation for traveler reports.

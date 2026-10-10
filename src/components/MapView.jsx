@@ -10,6 +10,7 @@ const defaultMapText = {
   demoLabel: "DEMO + OFFICER REPORTS",
   recenter: "Recenter map",
   layerLabel: "OpenStreetMap",
+  offlineLayer: "Offline map",
   legendZone: "Illustrative hazard zone",
   legendPlace: "Demo location marker",
   legendOfficer: "Officer reports",
@@ -23,7 +24,15 @@ const defaultMapText = {
   severity: "Severity",
 };
 
-function MapView({ place, hazards, t, hazardText, lang }) {
+function MapView({
+  place,
+  hazards,
+  t,
+  hazardText,
+  lang,
+  offline,
+  offlineSnapshot,
+}) {
   const text = t || defaultMapText;
 
   const mapElement = useRef(null);
@@ -37,11 +46,13 @@ function MapView({ place, hazards, t, hazardText, lang }) {
       scrollWheelZoom: false,
     }).setView(place.coords, place.zoom);
     mapInstance.current = map;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
+    if (!offline) {
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+    }
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
     const alertMarker = L.divIcon({
@@ -85,7 +96,7 @@ function MapView({ place, hazards, t, hazardText, lang }) {
       map.remove();
       mapInstance.current = null;
     };
-  }, [place, text]);
+  }, [place, text, offline]);
 
   useEffect(() => {
     const map = mapInstance.current;
@@ -171,13 +182,68 @@ function MapView({ place, hazards, t, hazardText, lang }) {
         popup.append(sourceLink);
       }
       marker.addTo(layer).bindPopup(popup);
+      if (hazard.geometry) {
+        L.geoJSON(hazard.geometry, {
+          style: { color: "#b65440", weight: 2, fillOpacity: 0.15 },
+        }).addTo(layer);
+      } else if (Array.isArray(hazard.zoneCoordinates)) {
+        L.polygon(hazard.zoneCoordinates, {
+          color: "#b65440",
+          weight: 2,
+          fillOpacity: 0.15,
+        }).addTo(layer);
+      }
+    });
+
+    const savedShelters = offlineSnapshot?.shelters?.data || [];
+    savedShelters.forEach((shelter) => {
+      const latitude = Number(shelter.latitude ?? shelter.lat);
+      const longitude = Number(shelter.longitude ?? shelter.lng);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+      L.circleMarker([latitude, longitude], {
+        radius: 7,
+        color: "#fff",
+        weight: 2,
+        fillColor: "#397052",
+        fillOpacity: 1,
+      })
+        .addTo(layer)
+        .bindPopup(shelter.name || "Saved shelter");
+    });
+
+    const savedRoads = offlineSnapshot?.roads?.data || [];
+    savedRoads.forEach((road) => {
+      const path = road.coordinates || road.path;
+      if (!Array.isArray(path) || path.length < 2) return;
+      L.polyline(path, {
+        color: road.isDemo ? "#718477" : "#397052",
+        weight: 4,
+        dashArray: road.isDemo ? "7 6" : undefined,
+      })
+        .addTo(layer)
+        .bindPopup(
+          `${road.name || "Saved road"}${road.status ? ` · ${road.status}` : ""}`,
+        );
     });
     hazardLayer.current = layer;
     return () => {
       layer.remove();
       hazardLayer.current = null;
     };
-  }, [hazards, place, text, hazardText, lang]);
+  }, [hazards, place, text, hazardText, lang, offlineSnapshot]);
+
+  const hasSavedMapGeometry =
+    hazards.some(
+      (hazard) => hazard.geometry || Array.isArray(hazard.zoneCoordinates),
+    ) ||
+    (offlineSnapshot?.shelters?.data || []).some(
+      (shelter) =>
+        Number.isFinite(Number(shelter.latitude ?? shelter.lat)) &&
+        Number.isFinite(Number(shelter.longitude ?? shelter.lng)),
+    ) ||
+    (offlineSnapshot?.roads?.data || []).some((road) =>
+      Array.isArray(road.coordinates || road.path),
+    );
 
   function recenter() {
     mapInstance.current?.setView(place.coords, place.zoom, { animate: true });
@@ -195,7 +261,15 @@ function MapView({ place, hazards, t, hazardText, lang }) {
         </span>
       </div>
       <div className="map-frame">
-        <div className="leaflet-map" ref={mapElement} />
+        <div
+          className={`leaflet-map ${offline ? "is-offline-map" : ""}`}
+          ref={mapElement}
+        />
+        {offline && !hasSavedMapGeometry && (
+          <div className="offline-map-note" role="note">
+            Plain offline map · no saved shelter or road geometry for this area.
+          </div>
+        )}
         <button
           className="map-recenter"
           onClick={recenter}
@@ -205,7 +279,7 @@ function MapView({ place, hazards, t, hazardText, lang }) {
           <LocateFixed size={16} />
         </button>
         <div className="map-layer-label">
-          <Layers2 size={13} /> {text.layerLabel}
+          <Layers2 size={13} /> {offline ? text.offlineLayer : text.layerLabel}
         </div>
       </div>
       <div className="map-legend">

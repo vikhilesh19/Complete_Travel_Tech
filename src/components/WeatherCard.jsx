@@ -26,7 +26,15 @@ const weatherCodes = {
   99: "Thunderstorm",
 };
 
-function WeatherCard({ coords, placeName, t }) {
+function WeatherCard({
+  coords,
+  placeName,
+  t,
+  areaId,
+  onWeatherLoaded,
+  savedWeather,
+  offline = false,
+}) {
   const text = t || {
     eyebrow: "LIVE WEATHER · OPEN-METEO",
     humidity: "humidity",
@@ -34,6 +42,7 @@ function WeatherCard({ coords, placeName, t }) {
     observed: "Observed",
     feelsLike: "Feels like",
     sourceNote: "Live API · not a hazard warning",
+    savedOffline: "Saved offline",
     fetching: "Fetching current conditions…",
     unavailable: "Weather unavailable. Check your connection.",
   };
@@ -51,18 +60,28 @@ function WeatherCard({ coords, placeName, t }) {
         if (!response.ok) throw new Error("Weather service unavailable");
         return response.json();
       })
-      .then((data) =>
-        setResult({ placeKey, weather: data.current, error: false }),
-      )
+      .then((data) => {
+        onWeatherLoaded?.((current) => ({
+          ...current,
+          [areaId]: data.current,
+        }));
+        setResult({ placeKey, weather: data.current, error: false });
+      })
       .catch((error) => {
         if (error.name !== "AbortError") {
           setResult({ placeKey, weather: null, error: true });
         }
       });
     return () => controller.abort();
-  }, [coords, placeKey]);
+  }, [coords, placeKey, areaId, onWeatherLoaded]);
 
-  const currentResult = result?.placeKey === placeKey ? result : null;
+  const liveResult = result?.placeKey === placeKey ? result : null;
+  const currentResult =
+    !offline && liveResult?.weather
+      ? liveResult
+      : savedWeather?.data
+        ? { placeKey, weather: savedWeather.data, error: false, saved: true }
+        : liveResult;
   const weather = currentResult?.weather;
   const state = currentResult
     ? currentResult.error
@@ -121,7 +140,11 @@ function WeatherCard({ coords, placeName, t }) {
           )}
         </div>
       )}
-      <div className="weather-source">{text.sourceNote}</div>
+      <div className="weather-source">
+        {currentResult?.saved
+          ? `${text.savedOffline} · ${new Date(savedWeather.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : text.sourceNote}
+      </div>
     </article>
   );
 }

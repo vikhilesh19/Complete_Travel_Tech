@@ -1,0 +1,61 @@
+.offline-save-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 15px;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.offline-save-panel strong {
+  color: #344239;
+  font-size: 11px;
+}
+.offline-save-panel p {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  color: #78837b;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.offline-save-panel p svg {
+  color: #3c7956;
+  flex: none;
+}
+.offline-save-panel .offline-save-error {
+  color: #a13e32;
+}
+.offline-save-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 0;
+  color: #fff;
+  background: #376d54;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+.offline-save-panel button:hover {
+  background: #28583f;
+}
+.offline-save-panel button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+@media (max-width: 560px) {
+  .offline-save-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .offline-save-panel button {
+    width: 100%;
+  }
+}

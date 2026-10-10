@@ -1,0 +1,20 @@
+.offline-status-banner {
+  display: grid;
+  gap: 4px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e2c98e;
+  color: #664b20;
+  background: #fff4d8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.offline-status-banner > span {
+  color: #8a3d2d;
+  font-weight: 700;
+}
+@media (max-width: 560px) {
+  .offline-status-banner {
+    padding: 9px 13px;
+    font-size: 10px;
+  }
+}

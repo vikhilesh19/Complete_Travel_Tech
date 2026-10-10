@@ -49,6 +49,25 @@
   height: 100%;
   z-index: 1;
 }
+.leaflet-map.is-offline-map,
+.map-frame:has(.is-offline-map) {
+  background-color: #e7e9e5;
+}
+.map-frame:has(.is-offline-map) .leaflet-control-attribution {
+  display: none;
+}
+.offline-map-note {
+  position: absolute;
+  z-index: 600;
+  top: 10px;
+  left: 10px;
+  max-width: min(300px, calc(100% - 60px));
+  padding: 7px 9px;
+  color: #536158;
+  background: #ffffffed;
+  font-size: 9px;
+  line-height: 1.45;
+}
 .map-recenter {
   position: absolute;
   z-index: 500;
