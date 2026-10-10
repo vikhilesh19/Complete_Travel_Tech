@@ -9,7 +9,12 @@ import HelpPanel from "./components/HelpPanel.jsx";
 import AskSafety from "./components/AskSafety.jsx";
 import OfficerDashboard from "./components/OfficerDashboard.jsx";
 import HazardFeed from "./components/HazardFeed.jsx";
-import { hazardReportTranslations, translations } from "./translations.js";
+import SmsSubscription from "./components/SmsSubscription.jsx";
+import {
+  hazardReportTranslations,
+  smsSubscriptionTranslations,
+  translations,
+} from "./translations.js";
 import {
   getAreaSnapshot,
   getQueuedHelpActions,
@@ -54,6 +59,7 @@ function App() {
   const [weatherByArea, setWeatherByArea] = useState({});
   const [pendingHelpActions, setPendingHelpActions] = useState([]);
   const [smsHelpNumber, setSmsHelpNumber] = useState("");
+  const [smsAlertsEnabled, setSmsAlertsEnabled] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [savingOffline, setSavingOffline] = useState(false);
   const [isOnline, setIsOnline] = useState(
@@ -195,6 +201,7 @@ function App() {
         if (active && typeof config?.smsHelpNumber === "string") {
           setSmsHelpNumber(config.smsHelpNumber);
         }
+        if (active) setSmsAlertsEnabled(config?.smsAlertsEnabled === true);
       })
       .catch(() => {});
     return () => {
@@ -412,6 +419,13 @@ function App() {
                     hazardReportTranslations[lang] ||
                     hazardReportTranslations.en
                   }
+                />
+                <SmsSubscription
+                  areaId={activePlace}
+                  areaName={place.shortName}
+                  language={lang}
+                  enabled={smsAlertsEnabled}
+                  text={smsSubscriptionTranslations[lang] || smsSubscriptionTranslations.en}
                 />
                 <AlertCard alert={place.alert} t={t.alertCard} />
               </div>

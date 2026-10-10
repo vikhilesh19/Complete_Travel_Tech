@@ -55,18 +55,22 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
     {
       name: `${place.keralaName || "Kerala coast"} · Kochi`,
       coords: [9.9312, 76.2673],
+      areaId: "kerala",
     },
     {
       name: `${place.keralaName || "Kerala coast"} · Alappuzha`,
       coords: [9.4981, 76.3388],
+      areaId: "kerala",
     },
     {
       name: `${place.wayanadName || "Wayanad hills"} · Meppadi`,
       coords: [11.5544, 76.132],
+      areaId: "wayanad",
     },
     {
       name: `${place.wayanadName || "Wayanad hills"} · Mananthavady`,
       coords: [11.8009, 75.9996],
+      areaId: "wayanad",
     },
   ];
 
@@ -209,6 +213,9 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...report,
+          areaId: zoneOptions.find(
+            (zone) => zone.name === report.affectedZone,
+          )?.areaId,
           onsetAt: new Date(report.onsetAt).toISOString(),
           expiresAt: new Date(report.expiresAt).toISOString(),
         }),
@@ -218,7 +225,12 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
         throw new Error(data.error || "Hazard report could not be saved.");
       onHazardAdded(data);
       setReport((current) => ({ ...current, description: "" }));
-      onNotice("Hazard report saved and shared with travelers.");
+      const smsNotice = !data.sms?.configured
+        ? "SMS notifications are not configured."
+        : data.sms.sent === 0 && data.sms.failed === 0
+          ? "No verified SMS subscribers are in this region."
+          : `${data.sms.sent} SMS accepted by the provider; ${data.sms.failed} failed.`;
+      onNotice(`Hazard report saved. ${smsNotice}`);
     } catch (requestError) {
       setError(
         requestError.message || "Could not connect to the hazard service.",

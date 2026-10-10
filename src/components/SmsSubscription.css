@@ -1,0 +1,21 @@
+.sms-subscription { margin: 0 0 15px; padding: 17px 19px; border: 1px solid #dfe5de; background: #fff; }
+.sms-subscription-heading { display: flex; align-items: center; gap: 10px; }
+.sms-icon { width: 31px; height: 31px; display: grid; flex: 0 0 31px; place-items: center; background: #e6efe9; color: #376d54; }
+.sms-subscription-heading .eyebrow { margin: 0 0 3px; font-size: 8px; }
+.sms-subscription-heading h2 { margin: 0; color: var(--ink); font-family: var(--display); font-size: 19px; font-weight: 500; }
+.sms-description { margin: 11px 0; color: #66736b; font-size: 10px; line-height: 1.55; }
+.sms-unavailable { margin: 10px 0 0; padding: 9px 10px; background: #f6f2e9; color: #765b37; font-size: 10px; line-height: 1.5; }
+.sms-form { display: grid; gap: 10px; }
+.sms-field { display: grid; gap: 5px; color: #526057; font-size: 9px; font-weight: 700; }
+.sms-field input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid #dfe5de; color: var(--ink); background: #fff; font: inherit; font-size: 11px; }
+.sms-consent { display: flex; align-items: flex-start; gap: 7px; color: #6c776f; font-size: 9px; line-height: 1.5; }
+.sms-consent input { flex: 0 0 auto; margin: 1px 0 0; accent-color: #376d54; }
+.sms-submit { width: fit-content; min-height: 35px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; border: 0; color: #fff; background: #376d54; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.sms-submit:hover:not(:disabled) { background: #28583f; }
+.sms-submit:disabled { cursor: not-allowed; opacity: .55; }
+.sms-error { margin: 0; color: #a13e32; font-size: 10px; }
+.sms-success { display: flex; align-items: flex-start; gap: 7px; padding: 9px; background: #eaf3ec; color: #356349; font-size: 10px; line-height: 1.5; }
+.sms-success svg { flex: 0 0 auto; }
+.sms-privacy { margin: 9px 0 0; color: #889189; font-size: 8px; line-height: 1.5; }
+.sms-form-actions { display: flex; align-items: center; gap: 12px; }
+.sms-text-button { padding: 6px 0; border: 0; color: #52675b; background: transparent; font-size: 10px; text-decoration: underline; cursor: pointer; }

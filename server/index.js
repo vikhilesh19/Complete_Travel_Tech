@@ -18,8 +18,136 @@ const sessionCookieName = "wayfinder_officer";
 const translationCache = new Map();
 const translationRequests = new Map();
 const helpActionRequests = new Map();
+const smsCodeRequests = new Map();
 
 app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: false, limit: "4kb" }));
+
+function smsProviderConfig() {
+  return {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID,
+    fromNumber: process.env.TWILIO_SMS_FROM_NUMBER,
+  };
+}
+
+function smsAlertsConfigured() {
+  const config = smsProviderConfig();
+  const webhookUrl = process.env.TWILIO_INBOUND_WEBHOOK_URL || "";
+  try {
+    return (
+      Object.values(config).every(Boolean) &&
+      new URL(webhookUrl).protocol === "https:" &&
+      !webhookUrl.includes("example.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function consumeRateLimit(map, key, limit, windowMs) {
+  const now = Date.now();
+  const recent = (map.get(key) || []).filter((time) => now - time < windowMs);
+  if (recent.length >= limit) {
+    map.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  map.set(key, recent);
+  return true;
+}
+
+async function twilioPost(url, values) {
+  const { accountSid, authToken } = smsProviderConfig();
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams(values),
+    signal: AbortSignal.timeout(12_000),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`Twilio returned ${response.status}.`);
+  return result;
+}
+
+async function translateSmsText(text, language) {
+  if (language === "en") return text;
+  try {
+    const query = new URLSearchParams({
+      client: "gtx",
+      sl: "auto",
+      tl: language,
+      dt: "t",
+      q: text.slice(0, 1200),
+    });
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?${query}`,
+      { signal: AbortSignal.timeout(8_000) },
+    );
+    if (!response.ok) throw new Error("Translation unavailable.");
+    const result = await response.json();
+    const translated = Array.isArray(result[0])
+      ? result[0].map((part) => part[0] || "").join("")
+      : "";
+    return translated || text;
+  } catch {
+    return text;
+  }
+}
+
+async function sendHazardSms(hazard, areaId) {
+  if (!smsAlertsConfigured()) return { configured: false, sent: 0, failed: 0 };
+  const result = await pool.query(
+    `SELECT phone_e164, language FROM tourist_sms_subscriptions
+     WHERE area_id = $1 AND verified_at IS NOT NULL`,
+    [areaId],
+  );
+  const subscribers = result.rows;
+  const translatedDescriptions = new Map();
+  let sent = 0;
+  let failed = 0;
+
+  for (let offset = 0; offset < subscribers.length; offset += 10) {
+    const batch = subscribers.slice(offset, offset + 10);
+    const outcomes = await Promise.allSettled(batch.map(async (subscriber) => {
+      let descriptionPromise = translatedDescriptions.get(subscriber.language);
+      if (!descriptionPromise) {
+        descriptionPromise = translateSmsText(
+          hazard.alert_text || hazard.description,
+          subscriber.language,
+        );
+        translatedDescriptions.set(subscriber.language, descriptionPromise);
+      }
+      const description = await descriptionPromise;
+      const label = hazard.is_demo
+        ? "DEMO ALERT (not official)"
+        : "OFFICER REPORT (not independently verified)";
+      const message = [
+        `${label}: ${hazard.hazard} · ${hazard.affected_zone || hazard.location}`,
+        `${hazard.severity}. ${description.slice(0, 900)}`,
+        `Expires: ${new Date(hazard.expires_at).toISOString()}`,
+        `Source: ${hazard.source}. Details: ${hazard.source_url}`,
+        "Reply STOP to opt out. Follow local authority instructions.",
+      ].join("\n");
+      await twilioPost(
+        `https://api.twilio.com/2010-04-01/Accounts/${smsProviderConfig().accountSid}/Messages.json`,
+        {
+          To: subscriber.phone_e164,
+          From: smsProviderConfig().fromNumber,
+          Body: message,
+        },
+      );
+    }));
+    sent += outcomes.filter((outcome) => outcome.status === "fulfilled").length;
+    failed += outcomes.filter((outcome) => outcome.status === "rejected").length;
+  }
+
+  return { configured: true, sent, failed };
+}
 
 app.post("/api/translate-alert", async (req, res) => {
   const { text, language } = req.body || {};
@@ -147,7 +275,156 @@ app.get("/api/public-config", (_req, res) => {
   const smsHelpNumber = /^\+?[1-9]\d{6,14}$/.test(configuredNumber)
     ? configuredNumber
     : "";
-  return res.json({ smsHelpNumber });
+  return res.json({ smsHelpNumber, smsAlertsEnabled: smsAlertsConfigured() });
+});
+
+function readSmsSubscription(body) {
+  const phone =
+    typeof body?.phone === "string"
+      ? body.phone.replace(/[\s().-]/g, "")
+      : "";
+  const { areaId, language, consent } = body || {};
+  if (
+    !/^\+[1-9]\d{7,14}$/.test(phone) ||
+    !["kerala", "wayanad"].includes(areaId) ||
+    !["en", "hi", "ml", "nl"].includes(language) ||
+    consent !== true
+  ) {
+    return null;
+  }
+  return { phone, areaId, language };
+}
+
+app.post("/api/sms/subscriptions/request-code", async (req, res) => {
+  const subscription = readSmsSubscription(req.body);
+  if (!subscription)
+    return res.status(400).json({ error: "Enter a valid international phone number and accept SMS consent." });
+  if (!smsAlertsConfigured())
+    return res.status(503).json({ error: "SMS alerts are not configured on this server." });
+
+  const requester = req.ip || "unknown";
+  if (
+    !consumeRateLimit(smsCodeRequests, `ip:${requester}`, 5, 60 * 60_000) ||
+    !consumeRateLimit(
+      smsCodeRequests,
+      `phone:${subscription.phone}`,
+      3,
+      15 * 60_000,
+    )
+  ) {
+    return res.status(429).json({ error: "Too many verification requests. Try again later." });
+  }
+
+  try {
+    await twilioPost(
+      `https://verify.twilio.com/v2/Services/${smsProviderConfig().verifyServiceSid}/Verifications`,
+      { To: subscription.phone, Channel: "sms" },
+    );
+    return res.status(202).json({ verificationRequired: true });
+  } catch (error) {
+    console.error("Unable to request SMS verification:", error.message);
+    return res.status(502).json({ error: "Could not send a verification code. Check the number and try again." });
+  }
+});
+
+app.post("/api/sms/subscriptions/verify", async (req, res) => {
+  const subscription = readSmsSubscription(req.body);
+  const code = req.body?.code;
+  if (!subscription || typeof code !== "string" || !/^\d{4,10}$/.test(code))
+    return res.status(400).json({ error: "Enter the phone, consent, and verification code." });
+  if (!smsAlertsConfigured())
+    return res.status(503).json({ error: "SMS alerts are not configured on this server." });
+  if (
+    !consumeRateLimit(
+      smsCodeRequests,
+      `verify:${req.ip || "unknown"}`,
+      10,
+      15 * 60_000,
+    )
+  ) {
+    return res.status(429).json({ error: "Too many code attempts. Request a new code later." });
+  }
+
+  try {
+    const verification = await twilioPost(
+      `https://verify.twilio.com/v2/Services/${smsProviderConfig().verifyServiceSid}/VerificationCheck`,
+      { To: subscription.phone, Code: code },
+    );
+    if (verification.status !== "approved")
+      return res.status(400).json({ error: "That verification code is not valid." });
+
+    await pool.query(
+      `INSERT INTO tourist_sms_subscriptions
+        (phone_e164, area_id, language, consented_at, verified_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (phone_e164, area_id) DO UPDATE SET
+         language = EXCLUDED.language,
+         consented_at = NOW(),
+         verified_at = NOW()`,
+      [subscription.phone, subscription.areaId, subscription.language],
+    );
+    return res.status(201).json({ subscribed: true, areaId: subscription.areaId });
+  } catch (error) {
+    console.error("Unable to verify SMS subscription:", error.message);
+    return res.status(503).json({ error: "Could not verify the subscription right now." });
+  }
+});
+
+app.post("/api/sms/twilio/inbound", async (req, res) => {
+  const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+  const webhookUrl = process.env.TWILIO_INBOUND_WEBHOOK_URL || "";
+  const signature = req.get("x-twilio-signature") || "";
+  let requestUrl = "";
+  try {
+    requestUrl = new URL(req.originalUrl, webhookUrl).toString();
+  } catch {
+    return res.status(403).end();
+  }
+  let signaturePayload = requestUrl;
+  for (const key of Object.keys(req.body || {}).sort()) {
+    const values = Array.isArray(req.body[key]) ? req.body[key].sort() : [req.body[key]];
+    for (const value of values) signaturePayload += key + value;
+  }
+  const expectedSignature = crypto
+    .createHmac("sha1", authToken)
+    .update(signaturePayload)
+    .digest("base64");
+  if (
+    !authToken ||
+    requestUrl !== webhookUrl ||
+    !signature ||
+    !safeEqual(signature, expectedSignature)
+  ) {
+    return res.status(403).end();
+  }
+
+  const phone =
+    typeof req.body?.From === "string"
+      ? req.body.From.replace(/[\s().-]/g, "")
+      : "";
+  const incomingText =
+    typeof req.body?.Body === "string" ? req.body.Body.trim().toUpperCase() : "";
+  const isOptOut =
+    /^\+[1-9]\d{7,14}$/.test(phone) &&
+    ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"].includes(
+      incomingText,
+    );
+  if (isOptOut) {
+    try {
+      await pool.query(
+        "DELETE FROM tourist_sms_subscriptions WHERE phone_e164 = $1",
+        [phone],
+      );
+    } catch (error) {
+      console.error("Unable to remove SMS opt-out:", error.message);
+      return res.status(503).end();
+    }
+  }
+  return res.type("text/xml").send(
+    isOptOut
+      ? "<Response><Message>You have been unsubscribed from hazard alerts.</Message></Response>"
+      : "<Response></Response>",
+  );
 });
 
 function safeEqual(first, second) {
@@ -555,7 +832,7 @@ app.get("/api/hazards", async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, hazard, location, description, severity, latitude, longitude,
-              affected_zone, alert_text, onset_at, expires_at, source, source_url,
+              area_id, affected_zone, alert_text, onset_at, expires_at, source, source_url,
               is_demo, created_at
       FROM hazards
       WHERE expires_at IS NOT NULL AND expires_at > NOW()
@@ -581,6 +858,7 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
     source,
     sourceUrl,
     isDemo,
+    areaId,
     latitude,
     longitude,
   } = req.body || {};
@@ -624,6 +902,7 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
     sourceUrl.length > 500 ||
     !/^https?:\/\//i.test(sourceUrl) ||
     typeof isDemo !== "boolean" ||
+    !["kerala", "wayanad"].includes(areaId) ||
     !Number.isFinite(lat) ||
     lat < -90 ||
     lat > 90 ||
@@ -640,11 +919,11 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO hazards
-        (hazard, location, description, severity, latitude, longitude, created_by,
+        (hazard, location, description, severity, latitude, longitude, created_by, area_id,
          affected_zone, alert_text, onset_at, expires_at, source, source_url, is_demo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id, hazard, location, description, severity, latitude, longitude,
-                 affected_zone, alert_text, onset_at, expires_at, source, source_url,
+                 area_id, affected_zone, alert_text, onset_at, expires_at, source, source_url,
                  is_demo, created_at`,
       [
         hazard.trim(),
@@ -654,6 +933,7 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
         lat,
         lon,
         req.officer,
+        areaId,
         location.trim(),
         description.trim(),
         onset.toISOString(),
@@ -663,7 +943,14 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
         isDemo,
       ],
     );
-    return res.status(201).json(result.rows[0]);
+    let sms = { configured: smsAlertsConfigured(), sent: 0, failed: 0 };
+    try {
+      sms = await sendHazardSms(result.rows[0], areaId);
+    } catch (error) {
+      console.error("Hazard was saved but SMS delivery failed:", error.message);
+      sms = { configured: smsAlertsConfigured(), sent: 0, failed: 1 };
+    }
+    return res.status(201).json({ ...result.rows[0], sms });
   } catch (error) {
     console.error("Unable to save hazard:", error.message);
     return res.status(503).json({
@@ -684,6 +971,8 @@ async function start() {
         latitude DOUBLE PRECISION NOT NULL CHECK (latitude BETWEEN -90 AND 90),
         longitude DOUBLE PRECISION NOT NULL CHECK (longitude BETWEEN -180 AND 180),
         created_by VARCHAR(120) NOT NULL,
+        area_id VARCHAR(16) NOT NULL DEFAULT 'kerala'
+          CHECK (area_id IN ('kerala', 'wayanad')),
         affected_zone VARCHAR(120),
         alert_text TEXT,
         onset_at TIMESTAMPTZ,
@@ -696,6 +985,7 @@ async function start() {
     `);
     await pool.query(`
       ALTER TABLE hazards
+        ADD COLUMN IF NOT EXISTS area_id VARCHAR(16) NOT NULL DEFAULT 'kerala',
         ADD COLUMN IF NOT EXISTS affected_zone VARCHAR(120),
         ADD COLUMN IF NOT EXISTS alert_text TEXT,
         ADD COLUMN IF NOT EXISTS onset_at TIMESTAMPTZ,
@@ -762,6 +1052,20 @@ async function start() {
         received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tourist_sms_subscriptions (
+        phone_e164 VARCHAR(16) NOT NULL,
+        area_id VARCHAR(16) NOT NULL CHECK (area_id IN ('kerala', 'wayanad')),
+        language VARCHAR(2) NOT NULL CHECK (language IN ('en', 'hi', 'ml', 'nl')),
+        consented_at TIMESTAMPTZ NOT NULL,
+        verified_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (phone_e164, area_id)
+      )
+    `);
+    await pool.query(
+      "CREATE INDEX IF NOT EXISTS tourist_sms_subscriptions_area_idx ON tourist_sms_subscriptions (area_id)",
+    );
     await pool.query(
       "ALTER TABLE tourist_help_actions ALTER COLUMN action TYPE VARCHAR(16)",
     );
