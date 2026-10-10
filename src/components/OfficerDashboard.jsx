@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../api.js";
 import {
   AlertTriangle,
   Check,
@@ -90,7 +91,7 @@ function OfficerDashboard({
   ];
 
   async function fetchOwnedHazardIds() {
-    const response = await fetch("/api/officer/hazards");
+    const response = await apiFetch("/api/officer/hazards");
     const data = await readApiResponse(response);
     if (!response.ok)
       throw new Error(data.error || "Could not load your hazard reports.");
@@ -101,7 +102,7 @@ function OfficerDashboard({
     let mounted = true;
     async function checkSession() {
       try {
-        const response = await fetch("/api/officer/session");
+        const response = await apiFetch("/api/officer/session");
         const data = await readApiResponse(response);
         if (!mounted || !data.authenticated) return;
         setOfficer(data.username);
@@ -129,7 +130,7 @@ function OfficerDashboard({
     let active = true;
     async function loadHelpQueue() {
       try {
-        const response = await fetch("/api/officer/help-queue");
+        const response = await apiFetch("/api/officer/help-queue");
         const data = await readApiResponse(response);
         if (!response.ok)
           throw new Error(data.error || "Could not load help queue.");
@@ -158,7 +159,7 @@ function OfficerDashboard({
     try {
       const isRegistration = authMode === "register";
       if (isRegistration && !otpSent) {
-        const response = await fetch("/api/officer/register/send-otp", {
+        const response = await apiFetch("/api/officer/register/send-otp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(credentials),
@@ -170,7 +171,7 @@ function OfficerDashboard({
         onNotice("Verification code sent. Check your email.");
         return;
       }
-      const response = await fetch(
+      const response = await apiFetch(
         isRegistration ? "/api/officer/register" : "/api/officer/login",
         {
           method: "POST",
@@ -212,7 +213,7 @@ function OfficerDashboard({
   }
 
   async function signOut() {
-    await fetch("/api/officer/logout", { method: "POST" });
+    await apiFetch("/api/officer/logout", { method: "POST" });
     setOfficer(null);
     setOwnedHazardIds(new Set());
   }
@@ -226,7 +227,7 @@ function OfficerDashboard({
     setDeletingHazardId(hazardId);
     setError("");
     try {
-      const response = await fetch(`/api/hazards/${encodeURIComponent(hazardId)}`, {
+      const response = await apiFetch(`/api/hazards/${encodeURIComponent(hazardId)}`, {
         method: "DELETE",
       });
       const data = await readApiResponse(response);
@@ -250,7 +251,7 @@ function OfficerDashboard({
     setSortingRequestId(requestId);
     setHelpQueueError("");
     try {
-      const response = await fetch(`/api/officer/help-queue/${requestId}`, {
+      const response = await apiFetch(`/api/officer/help-queue/${requestId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -276,7 +277,7 @@ function OfficerDashboard({
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/hazards", {
+      const response = await apiFetch("/api/hazards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

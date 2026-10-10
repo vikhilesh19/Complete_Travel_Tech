@@ -45,7 +45,15 @@ npm run build
 npm run preview
 ```
 
-The static frontend can be deployed to Vercel with `npm run build` and `dist` as the output directory. This does not create the Next.js API or Supabase services in the original design brief. A public deployment link and demo video still need to be created and added for the hackathon submission.
+## Deploy frontend to Vercel with the hosted API
+
+Import this repository into Vercel and use the Vite defaults: build command `npm run build`, output directory `dist`, and root directory `.`. In Vercel Project Settings → Environment Variables, set `VITE_API_BASE_URL` to the origin of the already deployed API, for example `https://your-api.example.com` (no trailing slash). This value is public and must contain only the API origin, never the Neon connection string or other credentials. Redeploy after adding/changing it because Vite embeds it at build time.
+
+On the API host, set `FRONTEND_ORIGINS` to the exact deployed Vercel origin, such as `https://your-project.vercel.app`, and retain `DATABASE_URL` only in that backend host's secrets. The API allows credentialed CORS only from listed origins. For officer login across different sites, set `COOKIE_SAME_SITE=none` and run the API over HTTPS. Browser third-party-cookie restrictions can still block officer sessions when Vercel and the API use unrelated domains; for reliable officer login, use custom frontend/API hostnames under the same parent domain or proxy `/api` through a same-origin deployment. Public traveler reads do not require officer cookies.
+
+For local development, leave `VITE_API_BASE_URL` blank; Vite proxies `/api` to `API_PROXY_TARGET` (defaults to `http://localhost:3001`). No API origin means the deployed frontend will request `/api` from Vercel itself, so configure `VITE_API_BASE_URL` before deploying.
+
+A public deployment link and demo video still need to be created and added for the hackathon submission.
 
 ## Offline use
 

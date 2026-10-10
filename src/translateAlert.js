@@ -1,10 +1,12 @@
+import { apiFetch } from "./api.js";
+
 const requests = new Map();
 
 export function translateAlert(text, language) {
   const key = `${language}:${text}`;
   if (requests.has(key)) return requests.get(key);
 
-  const request = fetch("/api/translate-alert", {
+  const request = apiFetch("/api/translate-alert", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, language }),

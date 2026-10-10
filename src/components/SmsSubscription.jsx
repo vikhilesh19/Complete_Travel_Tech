@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { apiFetch } from "../api.js";
 import { BellRing, Check, MessageSquareText } from "lucide-react";
 import "./SmsSubscription.css";
 
 async function postSubscription(path, body) {
-  const response = await fetch(path, {
+  const response = await apiFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

@@ -13,6 +13,12 @@ const pool = new Pool(
     : undefined,
 );
 const port = Number(process.env.API_PORT || 3001);
+const allowedFrontendOrigins = new Set(
+  (process.env.FRONTEND_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+);
 const sessionLifetimeSeconds = 8 * 60 * 60;
 const sessionCookieName = "wayfinder_officer";
 const translationCache = new Map();
@@ -22,6 +28,46 @@ const smsCodeRequests = new Map();
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: false, limit: "4kb" }));
+app.use((req, res, next) => {
+  const origin = req.get("Origin");
+  if (!origin) return next();
+  let localDevelopmentOrigin = false;
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const parsedOrigin = new URL(origin);
+      localDevelopmentOrigin =
+        parsedOrigin.protocol === "http:" &&
+        ["localhost", "127.0.0.1"].includes(parsedOrigin.hostname);
+    } catch {
+      localDevelopmentOrigin = false;
+    }
+  }
+  if (!allowedFrontendOrigins.has(origin) && !localDevelopmentOrigin)
+    return res.status(403).json({ error: "Frontend origin is not allowed." });
+
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type,X-Requested-With,X-Wayfinder-Refresh",
+  );
+  res.setHeader(
+    "Access-Control-Expose-Headers",
+    "X-Wayfinder-Cached-At,X-Wayfinder-Offline",
+  );
+  res.setHeader("Vary", "Origin");
+
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  if (
+    ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
+    req.path !== "/api/sms/twilio/inbound" &&
+    req.get("X-Requested-With") !== "WayfinderWeb"
+  ) {
+    return res.status(403).json({ error: "Request origin validation failed." });
+  }
+  return next();
+});
 
 function smsProviderConfig() {
   return {
@@ -526,10 +572,11 @@ function setSessionCookie(res, username) {
     }),
   ).toString("base64url");
   const token = `${payload}.${sign(payload)}`;
+  const sameSite = process.env.COOKIE_SAME_SITE || "strict";
   res.cookie(sessionCookieName, token, {
     httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    sameSite,
+    secure: process.env.NODE_ENV === "production" || sameSite === "none",
     maxAge: sessionLifetimeSeconds * 1000,
     path: "/",
   });

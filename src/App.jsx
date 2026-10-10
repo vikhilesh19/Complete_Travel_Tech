@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { apiFetch } from "./api.js";
 import "./App.css";
 import Sidebar from "./components/Sidebar.jsx";
 import Topbar from "./components/Topbar.jsx";
@@ -125,7 +126,7 @@ function App() {
     let mounted = true;
     async function loadHazards() {
       try {
-        const response = await fetch("/api/hazards", {
+        const response = await apiFetch("/api/hazards", {
           headers: { "X-Wayfinder-Refresh": "1" },
         });
         const data = await response.json();
@@ -238,7 +239,7 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/public-config")
+    apiFetch("/api/public-config")
       .then((response) => (response.ok ? response.json() : null))
       .then((config) => {
         if (active && typeof config?.smsHelpNumber === "string") {
@@ -266,7 +267,7 @@ function App() {
 
       for (const action of queued) {
         try {
-          const response = await fetch("/api/help-queue", {
+          const response = await apiFetch("/api/help-queue", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(action),
@@ -320,7 +321,7 @@ function App() {
       setPendingHelpActions((current) => [...current, action]);
       setNotice("Waiting to send. This action is stored on this device.");
       if (navigator.onLine) {
-        const response = await fetch("/api/help-queue", {
+        const response = await apiFetch("/api/help-queue", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(action),
