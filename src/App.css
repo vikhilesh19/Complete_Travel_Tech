@@ -247,14 +247,26 @@
   background: var(--teal);
   box-shadow: 0 0 0 3px #d8ebe4;
 }
-.alert-weather-grid {
+.traveler-map-hazards {
   display: grid;
-  grid-template-columns: minmax(0, 1.58fr) minmax(260px, 0.92fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  align-items: start;
   gap: 15px;
 }
-.map-help-grid {
+.traveler-map-hazards > .map-panel {
+  min-height: 100%;
+}
+.traveler-hazard-column {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+  gap: 0;
+  min-width: 0;
+}
+.traveler-hazard-column .hazard-feed {
+  margin-bottom: 0;
+}
+.traveler-weather-help {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1.1fr);
   gap: 15px;
   margin-top: 15px;
 }
@@ -385,8 +397,8 @@
   .page-content {
     padding: 30px 26px 44px;
   }
-  .map-help-grid {
-    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+  .traveler-map-hazards {
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr);
   }
 }
 @media (max-width: 820px) {
@@ -397,8 +409,8 @@
   .page-content {
     padding: 26px 20px 34px;
   }
-  .alert-weather-grid,
-  .map-help-grid {
+  .traveler-map-hazards,
+  .traveler-weather-help {
     grid-template-columns: 1fr;
   }
   .welcome-row {

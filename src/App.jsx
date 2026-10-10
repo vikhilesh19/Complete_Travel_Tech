@@ -390,31 +390,7 @@ function App() {
           />
         ) : (
           <main className="page-content">
-            <HazardFeed
-              hazards={activeHazards}
-              loading={hazardsLoading}
-              error={hazardsError}
-              lang={lang}
-              text={
-                hazardReportTranslations[lang] || hazardReportTranslations.en
-              }
-            />
-            <section
-              className="alert-weather-grid"
-              aria-label="Current conditions"
-            >
-              <AlertCard alert={place.alert} t={t.alertCard} />
-              <WeatherCard
-                coords={place.coords}
-                placeName={place.shortName}
-                t={t.weather}
-                areaId={activePlace}
-                onWeatherLoaded={setWeatherByArea}
-                savedWeather={savedSnapshot?.weather}
-                offline={offlineDataShown}
-              />
-            </section>
-            <section className="map-help-grid">
+            <section className="traveler-map-hazards">
               <MapView
                 place={place}
                 hazards={activeHazards}
@@ -425,6 +401,30 @@ function App() {
                 lang={lang}
                 offline={offlineDataShown}
                 offlineSnapshot={savedSnapshot}
+              />
+              <div className="traveler-hazard-column">
+                <HazardFeed
+                  hazards={activeHazards}
+                  loading={hazardsLoading}
+                  error={hazardsError}
+                  lang={lang}
+                  text={
+                    hazardReportTranslations[lang] ||
+                    hazardReportTranslations.en
+                  }
+                />
+                <AlertCard alert={place.alert} t={t.alertCard} />
+              </div>
+            </section>
+            <section className="traveler-weather-help" aria-label="Weather and assistance">
+              <WeatherCard
+                coords={place.coords}
+                placeName={place.shortName}
+                t={t.weather}
+                areaId={activePlace}
+                onWeatherLoaded={setWeatherByArea}
+                savedWeather={savedSnapshot?.weather}
+                offline={offlineDataShown}
               />
               <HelpPanel
                 onSend={sendHelp}
