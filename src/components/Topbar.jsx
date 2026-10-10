@@ -1,3 +1,4 @@
+import { useId, useRef } from "react";
 import { Bell, ChevronDown, Globe, MapPin } from "lucide-react";
 import { LANGUAGES } from "../translations.js";
 import "./Topbar.css";
@@ -10,6 +11,24 @@ function Topbar({
   onLanguageChange,
   t,
 }) {
+  const languageSelectId = useId();
+
+  // Refs for both dropdowns
+  const areaSelectRef = useRef(null);
+  const languageSelectRef = useRef(null);
+
+  const openSelect = (ref) => {
+    const select = ref.current;
+    if (!select) return;
+
+    if (typeof select.showPicker === "function") {
+      select.showPicker();
+    } else {
+      select.focus();
+      select.click();
+    }
+  };
+
   const topbarText = t || {
     yourArea: "Your area",
     chooseArea: "Choose travel area",
@@ -27,32 +46,61 @@ function Topbar({
           <span className="location-icon">
             <MapPin size={15} />
           </span>
-          <span className="location-label">{topbarText.yourArea}</span>
+
+          <span className="location-label">
+            {topbarText.yourArea}
+          </span>
+
           <label className="select-wrap">
             <select
+              ref={areaSelectRef}
               value={activePlace}
-              onChange={(event) => onPlaceChange(event.target.value)}
+              onChange={(event) =>
+                onPlaceChange(event.target.value)
+              }
               aria-label={topbarText.chooseArea}
             >
-              <option value="kerala">{place.keralaName || "Kerala coast"}</option>
-              <option value="wayanad">{place.wayanadName || "Wayanad hills"}</option>
+              <option value="kerala">
+                {place.keralaName || "Kerala coast"}
+              </option>
+              <option value="wayanad">
+                {place.wayanadName || "Wayanad hills"}
+              </option>
             </select>
-            <ChevronDown size={13} />
+
+            <ChevronDown
+              size={13}
+              className="select-chevron"
+              onClick={() => openSelect(areaSelectRef)}
+            />
           </label>
         </div>
 
         <div className="topbar-divider" />
 
-        {/* Language Selection Dropdown Menu */}
         <div className="topbar-language">
-          <span className="language-icon" title={topbarText.language}>
+          <button
+            type="button"
+            className="language-icon"
+            aria-label={topbarText.chooseLanguage}
+            title={topbarText.language}
+            onClick={() => openSelect(languageSelectRef)}
+          >
             <Globe size={15} />
+          </button>
+
+          <span className="language-label">
+            {topbarText.language}
           </span>
-          <span className="language-label">{topbarText.language}</span>
+
           <label className="select-wrap">
             <select
+              id={languageSelectId}
+              ref={languageSelectRef}
               value={lang}
-              onChange={(event) => onLanguageChange(event.target.value)}
+              onChange={(event) =>
+                onLanguageChange(event.target.value)
+              }
               aria-label={topbarText.chooseLanguage}
             >
               {LANGUAGES.map((l) => (
@@ -61,27 +109,42 @@ function Topbar({
                 </option>
               ))}
             </select>
-            <ChevronDown size={13} />
+
+            <ChevronDown
+              size={13}
+              className="select-chevron"
+              onClick={() => openSelect(languageSelectRef)}
+            />
           </label>
         </div>
       </div>
 
       <div className="topbar-right">
         <span className="topbar-live">
-          <span /> {topbarText.weatherSource}
+          <span />
+          {topbarText.weatherSource}
         </span>
+
         <button
+          type="button"
           className="icon-button"
           aria-label={topbarText.notifications}
           title="No official alert feed connected"
         >
           <Bell size={17} />
         </button>
-        <div className="user-avatar" aria-label={topbarText.profile}>
+
+        <div
+          className="user-avatar"
+          aria-label={topbarText.profile}
+        >
           T
         </div>
       </div>
-      <span className="sr-only">Current location: {place.shortName}</span>
+
+      <span className="sr-only">
+        Current location: {place.shortName}
+      </span>
     </header>
   );
 }
