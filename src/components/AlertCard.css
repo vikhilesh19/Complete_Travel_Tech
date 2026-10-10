@@ -3,17 +3,20 @@
   overflow: hidden;
   min-height: 210px;
   padding: 20px 23px 0;
+  border-radius: var(--radius-card);
   background: #fff;
   border: 1px solid #e6e7df;
+  box-shadow: var(--soft-shadow);
 }
 .alert-card::after {
   content: "";
   position: absolute;
-  top: 0;
+  top: 14px;
   right: 0;
-  width: 5px;
-  height: 100%;
+  width: 4px;
+  height: calc(100% - 28px);
   background: #d5a552;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
 }
 .alert-card-top,
 .alert-card-footer {
@@ -37,6 +40,7 @@
 .alert-demo-tag {
   position: relative;
   z-index: 1;
+  border-radius: var(--radius-pill);
 }
 .alert-card-content {
   padding: 17px 0 15px;

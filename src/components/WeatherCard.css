@@ -1,8 +1,10 @@
 .weather-card {
   min-height: 210px;
   padding: 20px 22px 0;
+  border-radius: var(--radius-card);
   background: #e5eee7;
   border: 1px solid #dce7de;
+  box-shadow: var(--soft-shadow);
 }
 .weather-card-head {
   display: flex;
@@ -26,6 +28,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
+  border-radius: 12px;
   color: #a7793c;
   background: #f5f1e6;
 }

@@ -9,6 +9,7 @@
   padding: 0 40px;
   background: #fbfcfaef;
   border-bottom: 1px solid var(--line);
+  box-shadow: 0 4px 18px rgb(37 55 44 / 3%);
   backdrop-filter: blur(12px);
 }
 .topbar-left {
@@ -31,7 +32,7 @@
   height: 29px;
   background: #e6efe9;
   color: #42715d;
-  border-radius: 4px;
+  border-radius: 10px;
 }
 .language-icon {
   background: #eef1f8;
@@ -60,8 +61,9 @@
   background: #ffffff90;
   padding: 2px 8px;
   border: 1px solid #e1e7e3;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgb(36 54 43 / 3%);
 }
 .select-wrap:hover {
   border-color: #cbd7cf;
@@ -101,9 +103,11 @@
   place-items: center;
   width: 31px;
   height: 31px;
+  border-radius: 50%;
   border: 1px solid var(--line);
   color: #66736b;
   background: #fff;
+  box-shadow: 0 2px 8px rgb(36 54 43 / 4%);
 }
 .icon-button:hover {
   color: var(--ink);

@@ -9,9 +9,13 @@
   --paper: #ffffff;
   --ink: #202924;
   --muted: #7b8580;
-  --line: #e3e8e2;
+  --line: #e8ede8;
   --teal: #3d8670;
   --display: "Fraunces", Georgia, serif;
+  --radius-card: 18px;
+  --radius-control: 11px;
+  --radius-pill: 999px;
+  --soft-shadow: 0 12px 32px rgb(36 54 43 / 6%);
 }
 * {
   box-sizing: border-box;
@@ -29,7 +33,9 @@ button {
   cursor: pointer;
 }
 button:focus-visible,
-select:focus-visible {
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
   outline: 2px solid #478a73;
   outline-offset: 3px;
 }

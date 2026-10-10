@@ -1,9 +1,11 @@
 .hazard-feed {
   margin: 0 0 15px;
   padding: 18px 20px;
+  border-radius: var(--radius-card);
   border: 1px solid #dfe5de;
-  border-left: 3px solid #b76343;
+  border-top: 3px solid #b76343;
   background: #fff;
+  box-shadow: var(--soft-shadow);
 }
 .hazard-feed-heading {
   display: flex;
@@ -24,6 +26,7 @@
 .hazard-feed-count {
   flex: none;
   padding: 6px 8px;
+  border-radius: var(--radius-pill);
   color: #5f6a62;
   background: #f0f3ef;
   font-size: 9px;
@@ -38,8 +41,17 @@
 .hazard-report {
   min-width: 0;
   padding: 13px;
+  border-radius: 13px;
   border: 1px solid #e9ede8;
   background: #fdfefc;
+  box-shadow: 0 4px 14px rgb(36 54 43 / 3%);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.hazard-report:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgb(36 54 43 / 7%);
 }
 .hazard-report-title {
   display: flex;
@@ -51,6 +63,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 5px 8px;
+  border-radius: var(--radius-pill);
+  background: #f7f1e6;
   color: #89632e;
   font-size: 9px;
   font-weight: 800;
@@ -72,6 +87,8 @@
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.4px;
+  padding: 4px 7px;
+  border-radius: var(--radius-pill);
 }
 .hazard-report h3 {
   margin: 9px 0 5px;

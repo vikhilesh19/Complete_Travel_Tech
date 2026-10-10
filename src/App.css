@@ -234,6 +234,7 @@
   align-items: center;
   gap: 8px;
   border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
   padding: 9px 12px;
   color: #58645e;
   font-size: 11px;
@@ -258,11 +259,11 @@
 }
 .traveler-hazard-column {
   display: grid;
-  gap: 0;
+  gap: 12px;
   min-width: 0;
 }
 .traveler-hazard-column .hazard-feed {
-  margin-bottom: 0;
+  margin: 0;
 }
 .traveler-weather-help {
   display: grid;
@@ -279,7 +280,9 @@
 .info-panel {
   background: var(--paper);
   border: 1px solid var(--line);
+  border-radius: var(--radius-card);
   padding: 20px 22px;
+  box-shadow: var(--soft-shadow);
 }
 .panel-heading {
   display: flex;
@@ -301,6 +304,7 @@
   font-size: 9px;
   font-weight: 800;
   padding: 5px 7px;
+  border-radius: var(--radius-pill);
   letter-spacing: 0.7px;
   white-space: nowrap;
 }
@@ -315,6 +319,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
+  border-radius: 11px;
   background: #f8e8e1;
   flex: none;
 }

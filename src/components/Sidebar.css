@@ -22,6 +22,7 @@
   place-items: center;
   width: 37px;
   height: 37px;
+  border-radius: 12px;
   background: #d7e8df;
   color: #2c604c;
 }
@@ -59,6 +60,7 @@
   width: 100%;
   min-height: 41px;
   padding: 0 11px;
+  border-radius: 11px;
   border: 1px solid transparent;
   color: #aab5ae;
   background: transparent;
@@ -94,14 +96,17 @@
 }
 .sidebar-safety-card {
   padding: 14px 13px 13px;
+  border-radius: 14px;
   background: #2a3630;
   border: 1px solid #3a4941;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 10%);
 }
 .safety-card-icon {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
+  border-radius: 9px;
   margin-bottom: 10px;
   background: #364b40;
   color: #a6d0b8;

@@ -1,7 +1,9 @@
 .help-panel {
   padding: 19px 18px 14px;
+  border-radius: var(--radius-card);
   background: #fff;
   border: 1px solid var(--line);
+  box-shadow: var(--soft-shadow);
 }
 .help-panel-heading {
   display: flex;
@@ -13,6 +15,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
+  border-radius: 12px;
   color: #47745e;
   background: #e5efe8;
 }
@@ -44,6 +47,7 @@
   min-height: 49px;
   width: 100%;
   padding: 7px 9px;
+  border-radius: 12px;
   border: 1px solid #e8ece7;
   color: #334139;
   background: #fbfcfa;
@@ -61,6 +65,7 @@
   place-items: center;
   width: 29px;
   height: 29px;
+  border-radius: 10px;
   flex: none;
   color: #4d7c64;
   background: #e6f0e8;
@@ -89,6 +94,7 @@
   gap: 9px;
   margin-top: 11px;
   padding: 10px;
+  border-radius: 12px;
   color: #fff;
   background: #a64f40;
   text-decoration: none;
@@ -112,6 +118,7 @@
   width: 100%;
   min-height: 36px;
   margin-top: 7px;
+  border-radius: var(--radius-control);
   border: 1px solid #dce7de;
   color: #3f6e52;
   background: #f5f8f4;
