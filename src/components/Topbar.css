@@ -176,4 +176,32 @@
   .topbar-divider {
     display: none;
   }
+  .topbar-left {
+    min-width: 0;
+    gap: 6px;
+  }
+  .topbar-location,
+  .topbar-language {
+    gap: 4px;
+  }
+  .topbar-location .location-icon {
+    display: none;
+  }
+  .topbar-location .select-wrap {
+    max-width: 91px;
+  }
+  .topbar-language .select-wrap {
+    max-width: 78px;
+  }
+  .select-wrap {
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+  .select-wrap select {
+    max-width: 100%;
+    font-size: 10px;
+  }
+  .topbar-right .user-avatar {
+    display: none;
+  }
 }

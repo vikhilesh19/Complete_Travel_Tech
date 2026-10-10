@@ -190,6 +190,7 @@ export const translations = {
       weatherSource: "Open-Meteo weather source",
       notifications: "Notifications",
       profile: "Traveler profile",
+      saveOffline: "Save for offline",
     },
     places: {
       kerala: {
@@ -330,6 +331,7 @@ export const translations = {
       weatherSource: "ओपन-मेटियो मौसम स्रोत",
       notifications: "सूचनाएं",
       profile: "यात्री प्रोफ़ाइल",
+      saveOffline: "ऑफ़लाइन सहेजें",
     },
     places: {
       kerala: {
@@ -470,6 +472,7 @@ export const translations = {
       weatherSource: "ഓപ്പൺ-മെറ്റിയോ കാലാവസ്ഥ",
       notifications: "അറിയിപ്പുകൾ",
       profile: "യാത്രാ പ്രൊഫൈൽ",
+      saveOffline: "ഓഫ്‌ലൈനായി സേവ് ചെയ്യുക",
     },
     places: {
       kerala: {
@@ -609,6 +612,7 @@ export const translations = {
       weatherSource: "Open-Meteo weerbron",
       notifications: "Meldingen",
       profile: "Reizigersprofiel",
+      saveOffline: "Offline opslaan",
     },
     places: {
       kerala: {

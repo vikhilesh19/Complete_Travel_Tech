@@ -1,7 +1,7 @@
-import { Download, Check } from "lucide-react";
+import { Download } from "lucide-react";
 import "./OfflineSavePanel.css";
 
-function OfflineSavePanel({ onSave, savedAt, saving, disabled, error }) {
+function OfflineSavePanel({ onSave, savedAt, saving, disabled, label }) {
   const formattedTime = savedAt
     ? new Date(savedAt).toLocaleTimeString([], {
         hour: "2-digit",
@@ -10,42 +10,22 @@ function OfflineSavePanel({ onSave, savedAt, saving, disabled, error }) {
     : "";
 
   return (
-    <section
-      className="offline-save-panel"
-      aria-label="Offline area information"
+    <button
+      type="button"
+      className="offline-save-button"
+      onClick={onSave}
+      disabled={saving || disabled}
+      aria-label={label}
+      title={
+        disabled
+          ? "Connect to the internet to refresh saved information"
+          : savedAt
+            ? `Saved offline at ${formattedTime}. Select to update.`
+            : label
+      }
     >
-      <div>
-        <strong>Save this area for offline use</strong>
-        {savedAt ? (
-          <p role="status">
-            <Check size={14} /> Saved for offline use. Last updated{" "}
-            {formattedTime}.
-          </p>
-        ) : (
-          <p>
-            Save the latest available reports and area information on this
-            device.
-          </p>
-        )}
-        {error && (
-          <p className="offline-save-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving || disabled}
-        title={
-          disabled
-            ? "Connect to the internet to refresh saved information"
-            : undefined
-        }
-      >
-        <Download size={15} /> {saving ? "Saving…" : "Save for offline"}
-      </button>
-    </section>
+      <Download size={15} /> {saving ? "Saving…" : label}
+    </button>
   );
 }
 

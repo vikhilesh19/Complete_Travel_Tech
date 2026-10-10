@@ -9,7 +9,6 @@ import HelpPanel from "./components/HelpPanel.jsx";
 import AskSafety from "./components/AskSafety.jsx";
 import OfficerDashboard from "./components/OfficerDashboard.jsx";
 import HazardFeed from "./components/HazardFeed.jsx";
-import OfflineSavePanel from "./components/OfflineSavePanel.jsx";
 import { hazardReportTranslations, translations } from "./translations.js";
 import {
   getAreaSnapshot,
@@ -57,7 +56,6 @@ function App() {
   const [smsHelpNumber, setSmsHelpNumber] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [savingOffline, setSavingOffline] = useState(false);
-  const [offlineSaveError, setOfflineSaveError] = useState("");
   const [isOnline, setIsOnline] = useState(
     () => typeof navigator === "undefined" || navigator.onLine,
   );
@@ -300,13 +298,10 @@ function App() {
 
   async function saveCurrentAreaOffline() {
     if (!navigator.onLine || offlineDataShown) {
-      setOfflineSaveError(
-        "Connect to the internet to refresh saved area information.",
-      );
+      setNotice("Connect to the internet to refresh saved area information.");
       return;
     }
     setSavingOffline(true);
-    setOfflineSaveError("");
     const savedAt = new Date().toISOString();
     const bounds =
       activePlace === "kerala"
@@ -347,10 +342,9 @@ function App() {
     try {
       await saveAreaSnapshot(snapshot);
       setSavedSnapshot(snapshot);
+      setNotice("This area is saved for offline use on this device.");
     } catch (error) {
-      setOfflineSaveError(
-        error.message || "Could not save this area for offline use.",
-      );
+      setNotice(error.message || "Could not save this area for offline use.");
     } finally {
       setSavingOffline(false);
     }
@@ -366,6 +360,10 @@ function App() {
           onPlaceChange={handlePlaceChange}
           lang={lang}
           onLanguageChange={handleLanguageChange}
+          onSaveOffline={saveCurrentAreaOffline}
+          savedOfflineAt={savedSnapshot?.savedAt}
+          savingOffline={savingOffline}
+          offlineSaveDisabled={!isOnline || offlineDataShown}
           t={t.topbar}
         />
         {offlineDataShown && (
@@ -392,13 +390,6 @@ function App() {
           />
         ) : (
           <main className="page-content">
-            <OfflineSavePanel
-              onSave={saveCurrentAreaOffline}
-              savedAt={savedSnapshot?.savedAt}
-              saving={savingOffline}
-              disabled={!isOnline || offlineDataShown}
-              error={offlineSaveError}
-            />
             <HazardFeed
               hazards={activeHazards}
               loading={hazardsLoading}

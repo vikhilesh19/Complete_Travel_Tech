@@ -1,5 +1,6 @@
 import { useId, useRef } from "react";
 import { Bell, ChevronDown, Globe, MapPin } from "lucide-react";
+import OfflineSavePanel from "./OfflineSavePanel.jsx";
 import { LANGUAGES } from "../translations.js";
 import "./Topbar.css";
 
@@ -9,6 +10,10 @@ function Topbar({
   onPlaceChange,
   lang = "en",
   onLanguageChange,
+  onSaveOffline,
+  savedOfflineAt,
+  savingOffline,
+  offlineSaveDisabled,
   t,
 }) {
   const languageSelectId = useId();
@@ -117,6 +122,14 @@ function Topbar({
             />
           </label>
         </div>
+
+        <OfflineSavePanel
+          onSave={onSaveOffline}
+          savedAt={savedOfflineAt}
+          saving={savingOffline}
+          disabled={offlineSaveDisabled}
+          label={topbarText.saveOffline || "Save for offline"}
+        />
       </div>
 
       <div className="topbar-right">
