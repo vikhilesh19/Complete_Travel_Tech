@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, LogIn, LogOut, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  LogIn,
+  LogOut,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import "./OfficerDashboard.css";
 
 async function readApiResponse(response) {
@@ -21,7 +28,13 @@ async function readApiResponse(response) {
   return response.json();
 }
 
-function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
+function OfficerDashboard({
+  place,
+  hazards,
+  onHazardAdded,
+  onHazardDeleted,
+  onNotice,
+}) {
   const [officer, setOfficer] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -32,6 +45,8 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   const [helpQueue, setHelpQueue] = useState([]);
   const [helpQueueError, setHelpQueueError] = useState("");
   const [sortingRequestId, setSortingRequestId] = useState(null);
+  const [ownedHazardIds, setOwnedHazardIds] = useState(() => new Set());
+  const [deletingHazardId, setDeletingHazardId] = useState(null);
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
@@ -74,17 +89,35 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
     },
   ];
 
+  async function fetchOwnedHazardIds() {
+    const response = await fetch("/api/officer/hazards");
+    const data = await readApiResponse(response);
+    if (!response.ok)
+      throw new Error(data.error || "Could not load your hazard reports.");
+    return new Set(data.map(String));
+  }
+
   useEffect(() => {
     let mounted = true;
-    fetch("/api/officer/session")
-      .then((response) => response.json())
-      .then((data) => {
-        if (mounted && data.authenticated) setOfficer(data.username);
-      })
-      .catch(() => {})
-      .finally(() => {
+    async function checkSession() {
+      try {
+        const response = await fetch("/api/officer/session");
+        const data = await readApiResponse(response);
+        if (!mounted || !data.authenticated) return;
+        setOfficer(data.username);
+        try {
+          const hazardIds = await fetchOwnedHazardIds();
+          if (mounted) setOwnedHazardIds(hazardIds);
+        } catch {
+          if (mounted) setError("Could not load your hazard ownership. Refresh to retry.");
+        }
+      } catch {
+        return;
+      } finally {
         if (mounted) setCheckingSession(false);
-      });
+      }
+    }
+    checkSession();
     return () => {
       mounted = false;
     };
@@ -154,6 +187,11 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
             (isRegistration ? "Registration failed." : "Sign-in failed."),
         );
       setOfficer(data.username);
+      try {
+        setOwnedHazardIds(await fetchOwnedHazardIds());
+      } catch {
+        setOwnedHazardIds(new Set());
+      }
       setCredentials({ username: "", password: "", email: "" });
       setOtp("");
       setOtpSent(false);
@@ -176,6 +214,36 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
   async function signOut() {
     await fetch("/api/officer/logout", { method: "POST" });
     setOfficer(null);
+    setOwnedHazardIds(new Set());
+  }
+
+  async function deleteHazard(hazard) {
+    const hazardId = String(hazard.id);
+    if (!ownedHazardIds.has(hazardId) || !window.confirm(
+      `Delete your ${hazard.hazard} report for ${hazard.location}? This cannot be undone.`,
+    )) return;
+
+    setDeletingHazardId(hazardId);
+    setError("");
+    try {
+      const response = await fetch(`/api/hazards/${encodeURIComponent(hazardId)}`, {
+        method: "DELETE",
+      });
+      const data = await readApiResponse(response);
+      if (!response.ok)
+        throw new Error(data.error || "Could not delete this hazard report.");
+      setOwnedHazardIds((current) => {
+        const next = new Set(current);
+        next.delete(hazardId);
+        return next;
+      });
+      onHazardDeleted(data.id);
+      onNotice("Your hazard report was deleted.");
+    } catch (deleteError) {
+      setError(deleteError.message || "Could not delete this hazard report.");
+    } finally {
+      setDeletingHazardId(null);
+    }
   }
 
   async function markRequestSorted(requestId) {
@@ -224,6 +292,7 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
       if (!response.ok)
         throw new Error(data.error || "Hazard report could not be saved.");
       onHazardAdded(data);
+      setOwnedHazardIds((current) => new Set([...current, String(data.id)]));
       setReport((current) => ({ ...current, description: "" }));
       const smsNotice = !data.sms?.configured
         ? "SMS notifications are not configured."
@@ -644,12 +713,26 @@ function OfficerDashboard({ place, hazards, onHazardAdded, onNotice }) {
                   <span
                     className={`severity-dot severity-${hazard.severity.toLowerCase()}`}
                   />
-                  <div>
+                  <div className="officer-recent-copy">
                     <strong>
                       {hazard.hazard} · {hazard.location}
                     </strong>
                     <p>{hazard.description}</p>
                   </div>
+                  {ownedHazardIds.has(String(hazard.id)) && (
+                    <button
+                      className="officer-hazard-delete"
+                      type="button"
+                      disabled={deletingHazardId === String(hazard.id)}
+                      onClick={() => deleteHazard(hazard)}
+                      aria-label={`Delete your ${hazard.hazard} report for ${hazard.location}`}
+                    >
+                      <Trash2 size={14} />
+                      {deletingHazardId === String(hazard.id)
+                        ? "Deleting…"
+                        : "Delete"}
+                    </button>
+                  )}
                 </article>
               ))
             )}

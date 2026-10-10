@@ -303,6 +303,26 @@ function App() {
     setHazardsError("");
   }
 
+  function removeHazard(hazardId) {
+    setHazards((current) =>
+      current.filter((hazard) => String(hazard.id) !== String(hazardId)),
+    );
+    setSavedSnapshot((current) => {
+      if (!current?.hazards?.data) return current;
+      const updatedSnapshot = {
+        ...current,
+        hazards: {
+          ...current.hazards,
+          data: current.hazards.data.filter(
+            (hazard) => String(hazard.id) !== String(hazardId),
+          ),
+        },
+      };
+      saveAreaSnapshot(updatedSnapshot).catch(() => {});
+      return updatedSnapshot;
+    });
+  }
+
   async function saveCurrentAreaOffline() {
     if (!navigator.onLine || offlineDataShown) {
       setNotice("Connect to the internet to refresh saved area information.");
@@ -393,6 +413,7 @@ function App() {
             place={place}
             hazards={activeHazards}
             onHazardAdded={addHazard}
+            onHazardDeleted={removeHazard}
             onNotice={setNotice}
           />
         ) : (

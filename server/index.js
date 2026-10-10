@@ -828,6 +828,21 @@ app.post("/api/officer/logout", (_req, res) => {
   return res.status(204).end();
 });
 
+app.get("/api/officer/hazards", requireOfficer, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id FROM hazards WHERE created_by = $1",
+      [req.officer],
+    );
+    return res.json(result.rows.map((row) => String(row.id)));
+  } catch (error) {
+    console.error("Unable to load officer-owned hazards:", error.message);
+    return res
+      .status(503)
+      .json({ error: "Could not load your hazard reports." });
+  }
+});
+
 app.get("/api/hazards", async (_req, res) => {
   try {
     const result = await pool.query(
@@ -956,6 +971,29 @@ app.post("/api/hazards", requireOfficer, async (req, res) => {
     return res.status(503).json({
       error: "Hazard report could not be saved. Check the database connection.",
     });
+  }
+});
+
+app.delete("/api/hazards/:id", requireOfficer, async (req, res) => {
+  const hazardId = req.params.id;
+  if (!/^\d{1,18}$/.test(hazardId))
+    return res.status(400).json({ error: "Invalid hazard ID." });
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM hazards WHERE id = $1 AND created_by = $2 RETURNING id",
+      [hazardId, req.officer],
+    );
+    if (result.rowCount === 0)
+      return res
+        .status(404)
+        .json({ error: "Hazard not found or you do not own it." });
+    return res.json({ deleted: true, id: String(result.rows[0].id) });
+  } catch (error) {
+    console.error("Unable to delete officer hazard:", error.message);
+    return res
+      .status(503)
+      .json({ error: "Could not delete this hazard report." });
   }
 });
 
