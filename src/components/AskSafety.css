@@ -1,0 +1,120 @@
+.ask-safety-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.65fr) minmax(0, 1.5fr);
+  gap: 18px;
+  margin-top: 15px;
+  padding: 19px 21px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.ask-safety-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+.ask-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  color: #496c5b;
+  background: #e8f0e9;
+}
+.ask-safety-heading .eyebrow {
+  margin: 2px 0 5px;
+}
+.ask-safety-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.ask-safety-content > p {
+  margin: 0 0 9px;
+  color: #768179;
+  font-size: 10px;
+}
+.ask-safety-form {
+  display: flex;
+  height: 38px;
+  border: 1px solid #dfe6df;
+  background: #fbfcfa;
+}
+.ask-safety-form:focus-within {
+  border-color: #92b19b;
+}
+.ask-safety-form input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  padding: 0 11px;
+  color: #37433b;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+}
+.ask-safety-form input::placeholder {
+  color: #9aa29c;
+}
+.ask-safety-form button {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  flex: none;
+  border: 0;
+  color: #fff;
+  background: #46745c;
+}
+.ask-safety-form button:hover {
+  background: #315f4b;
+}
+.ask-safety-answer {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  background: #f7f5ed;
+}
+.answer-info {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  flex: none;
+  color: #86683e;
+  background: #eee6d4;
+}
+.ask-safety-answer strong {
+  display: block;
+  color: #62583f;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.ask-safety-answer small {
+  display: block;
+  margin-top: 3px;
+  color: #8b8066;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.asked-question {
+  margin: 0 0 4px;
+  color: #79837b;
+  font-size: 9px;
+}
+@media (max-width: 820px) {
+  .ask-safety-panel {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+@media (max-width: 560px) {
+  .ask-safety-panel {
+    padding: 15px;
+  }
+}

@@ -1,0 +1,329 @@
+.officer-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 38px 42px 54px;
+}
+.officer-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.officer-heading h1 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 500;
+}
+.officer-heading p:not(.eyebrow) {
+  margin: 8px 0 0;
+  color: #69716e;
+  font-size: 12px;
+}
+.officer-panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 25px;
+}
+.officer-login-panel {
+  max-width: 460px;
+  margin: 34px auto 0;
+  padding: 29px;
+}
+.officer-shield,
+.report-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 19px;
+  color: #366d53;
+  background: #e7f1e9;
+}
+.officer-login-panel h2,
+.officer-panel h2 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 500;
+}
+.officer-description {
+  color: #77817a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.officer-auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 20px;
+  border-bottom: 1px solid #dfe5de;
+}
+.officer-auth-tabs button {
+  min-height: 38px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #7a857e;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+.officer-auth-tabs button:hover {
+  color: #315f49;
+  background: #f6f8f5;
+}
+.officer-auth-tabs button.is-active {
+  border-bottom-color: #3d7658;
+  color: #315f49;
+}
+.officer-form {
+  display: grid;
+  gap: 9px;
+  margin-top: 21px;
+}
+.officer-form label {
+  margin-top: 5px;
+  color: #55635a;
+  font-size: 10px;
+  font-weight: 700;
+}
+.officer-form input,
+.officer-form select,
+.officer-form textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #dbe2dc;
+  border-radius: 2px;
+  color: #26332b;
+  background: #fdfefd;
+  font: inherit;
+  font-size: 11px;
+}
+.officer-form textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+.officer-otp-note {
+  margin: 0;
+  color: #728078;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.officer-submit,
+.officer-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 0;
+  color: #fff;
+  background: #376d54;
+  font-size: 11px;
+  font-weight: 700;
+}
+.officer-submit {
+  margin-top: 8px;
+}
+.officer-submit:hover,
+.officer-logout:hover {
+  background: #28583f;
+}
+.officer-submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.officer-error {
+  margin: 5px 0;
+  color: #a1382e;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.officer-logout {
+  min-height: 35px;
+  padding: 0 11px;
+  background: #52655a;
+}
+.officer-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  align-items: start;
+  gap: 15px;
+}
+.officer-session-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border: 1px solid #cfe0d2;
+  color: #42644c;
+  background: #edf5ed;
+  font-size: 11px;
+}
+.officer-session-note span {
+  flex-basis: 100%;
+  margin-left: 24px;
+  color: #748278;
+  font-size: 10px;
+}
+.report-panel {
+  padding: 22px;
+}
+.officer-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.officer-panel-heading .report-icon {
+  flex: none;
+  margin: 0;
+  color: #98563c;
+  background: #f5eae2;
+}
+.officer-panel-heading .eyebrow {
+  margin-bottom: 5px;
+}
+.report-panel h2 {
+  font-size: 22px;
+}
+.report-form {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+}
+.report-form > label,
+.report-form > input,
+.report-form > textarea,
+.report-form > select,
+.report-form > .coordinate-label,
+.report-form > .coordinate-inputs,
+.report-form > .officer-error,
+.report-form > .officer-disclaimer,
+.report-form > .officer-submit {
+  grid-column: 1 / -1;
+}
+.coordinate-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  color: #55635a;
+  font-size: 10px;
+  font-weight: 700;
+}
+.coordinate-inputs {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.coordinate-inputs label {
+  margin: 0;
+}
+.coordinate-inputs input {
+  min-width: 0;
+}
+.officer-disclaimer {
+  margin: 3px 0 0;
+  color: #858e88;
+  font-size: 9px;
+  line-height: 1.55;
+}
+.officer-recent h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 19px;
+}
+.officer-recent h2 span {
+  display: grid;
+  place-items: center;
+  min-width: 25px;
+  height: 25px;
+  padding: 0 6px;
+  color: #43684f;
+  background: #e9f1e9;
+  font:
+    700 10px "DM Sans",
+    sans-serif;
+}
+.officer-recent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #edf0eb;
+}
+.officer-recent-row strong {
+  color: #354239;
+  font-size: 10px;
+}
+.officer-recent-row p {
+  margin: 5px 0 0;
+  color: #79837c;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.severity-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #c58b38;
+}
+.severity-high,
+.severity-severe {
+  background: #b44d3d;
+}
+.severity-low {
+  background: #43805b;
+}
+.officer-footnote {
+  margin: 15px 0 0;
+  color: #828b84;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.officer-loading {
+  color: #728078;
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .officer-workspace {
+    grid-template-columns: 1fr;
+  }
+  .officer-session-note {
+    grid-column: auto;
+  }
+}
+@media (max-width: 560px) {
+  .officer-page {
+    padding: 24px 14px 38px;
+  }
+  .officer-heading {
+    align-items: flex-start;
+  }
+  .officer-heading h1 {
+    font-size: 30px;
+  }
+  .officer-heading p:not(.eyebrow) {
+    max-width: 250px;
+    line-height: 1.5;
+  }
+  .officer-panel,
+  .officer-login-panel {
+    padding: 19px 16px;
+  }
+  .coordinate-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+}

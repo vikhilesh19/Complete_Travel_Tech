@@ -1,0 +1,39 @@
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #202924;
+  background: #f3f5f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --canvas: #f3f5f1;
+  --paper: #ffffff;
+  --ink: #202924;
+  --muted: #7b8580;
+  --line: #e3e8e2;
+  --teal: #3d8670;
+  --display: "Fraunces", Georgia, serif;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  min-width: 360px;
+  min-height: 100vh;
+  margin: 0;
+}
+button,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid #478a73;
+  outline-offset: 3px;
+}
+::selection {
+  color: #153d30;
+  background: #d6ece2;
+}

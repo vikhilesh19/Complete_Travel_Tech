@@ -1,0 +1,101 @@
+.alert-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 210px;
+  padding: 20px 23px 0;
+  background: #fff;
+  border: 1px solid #e6e7df;
+}
+.alert-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  background: #d5a552;
+}
+.alert-card-top,
+.alert-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.alert-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #6d766f;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+.alert-type svg {
+  color: #a67537;
+}
+.alert-demo-tag {
+  position: relative;
+  z-index: 1;
+}
+.alert-card-content {
+  padding: 17px 0 15px;
+}
+.alert-severity {
+  color: #9a6428;
+  font-size: 10px;
+  font-weight: 800;
+}
+.alert-severity span {
+  color: #a49b8d;
+  font-weight: 500;
+}
+.alert-card h2 {
+  margin: 5px 0 3px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.alert-zone {
+  margin: 0;
+  color: #77817b;
+  font-size: 10px;
+}
+.alert-action {
+  margin: 13px 0 0;
+  color: #46524a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.alert-card-footer {
+  position: relative;
+  z-index: 1;
+  min-height: 37px;
+  border-top: 1px solid #edf0eb;
+  color: #818a84;
+  font-size: 9px;
+}
+.alert-card-footer span,
+.alert-card-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.alert-card-footer a {
+  color: #506c5e;
+  text-decoration: none;
+  font-weight: 700;
+}
+.alert-card-footer a:hover {
+  color: #2c604c;
+}
+@media (max-width: 560px) {
+  .alert-card {
+    padding-inline: 17px;
+  }
+  .alert-card h2 {
+    font-size: 23px;
+  }
+}
