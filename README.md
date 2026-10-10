@@ -1,120 +1,166 @@
 # Wayfinder Travel Safety
 
+Wayfinder is a traveler-safety web application for understanding local hazard reports during severe weather. It brings officer-submitted reports, map context, translated guidance, and offline reference information into one interface.
+
+> **Safety notice:** This project is a prototype, not an emergency service. Scenario content is illustrative. Officer-submitted reports are not independently verified and must not be treated as official warnings. Follow local authorities and contact emergency services directly.
+
 ## Problem
 
-During flash floods, cyclones, and landslides, visitors can receive fragmented or untranslated warnings and may rely on unverified social posts. Wayfinder is a source-aware interface concept for helping travelers understand local conditions and contact responders without presenting rumors or sample records as verified alerts.
+During floods, cyclones, and landslides, visitors may have trouble finding clear, local-language information about affected areas and safe next steps. Wayfinder explores a shared traveler and officer interface for publishing area-specific reports and making relevant information easier to find.
 
-## Current delivery
+## What works today
 
-This repository contains a responsive Vite web app with an Express API and PostgreSQL-backed officer hazard reports. Officers can sign in, submit a hazard location, coordinates, severity, and short description; reports are shared with traveler pages and shown on the map. Optional, region-specific SMS subscriptions can notify verified phone numbers when officers publish reports, but require a configured Twilio account. **This is not an operational emergency warning or response service.** The app still has no official alert feed, independent verification, web push, or mobile client.
+- Traveler view for the Kerala coast and Wayanad hills scenarios.
+- Interactive Leaflet map using OpenStreetMap tiles, plus current weather from Open-Meteo.
+- English, Hindi, Malayalam, and Dutch interface and report translations.
+- Officer sign-in and PostgreSQL-backed hazard reporting.
+- Officers can delete only reports they created; ownership is enforced by the API.
+- Traveler hazard feed, safety-question fallback, and assistance actions.
+- Optional SMS subscriptions with phone verification and area-specific hazard notifications. Requires Twilio configuration and may incur charges.
+- PWA shell and IndexedDB snapshots for selected offline information.
 
-The original scenario alert and map overlay remain illustrative and labeled as demo or unverified. Officer-submitted reports are persisted, but are not independently verified or treated as official guidance. Tourist safety actions remain local to the browser. The “Is this safe?” feature always returns “No official information yet for this area. Follow local authority instructions.”
+## Architecture
 
-## Delivery checklist
+- `src/`: React 19 and Vite traveler/officer interface.
+- `server/index.js`: Express application API used by the full local application. It connects to PostgreSQL through `DATABASE_URL` and initializes the application's tables.
+- `backend/api/health.js`: separate Vercel serverless health check. It verifies that its `DATABASE_URL` can query Neon; it does **not** implement the application routes for hazards, officers, help requests, or SMS.
+- `backend/server.js`: standalone Express health-check example; it is not the full application API.
+- `public/sw.js`: PWA service worker and offline public-data handling.
 
-- [x] Responsive traveler view and officer sign-in/reporting view, split into React components and stylesheets.
-- [x] PostgreSQL hazard storage with authenticated officer writes and public read-only report feed.
-- [x] Region-specific phone opt-in with Twilio verification and officer-report SMS delivery (requires provider configuration; live delivery not tested).
-- [x] Kerala coast and Wayanad hills scenarios with visible DEMO labels.
-- [x] OpenStreetMap map tiles and live Open-Meteo current weather.
-- [x] Safety question fixed fallback, local help actions, local request queue, and India emergency call link.
-- [x] PWA area QR links, IndexedDB offline snapshots, network-first public hazard/config reads, and queued help actions.
-- [ ] Official NDMA SACHET CAP or IMD alert ingestion, verified against a working official endpoint.
-- [ ] Replace the single configured officer credential with production identity management, role-based access, audit logs, and rate limiting.
-- [ ] Web Push, Telegram, production identity management, and expanded security tests.
-- [ ] Expo Go tourist client and installable Android package (Phase 2).
-- [ ] Public deployment URL and 2–5 minute demo video added to the repository.
+The Vite development server proxies `/api` to `http://localhost:3001` by default. The browser can use `VITE_API_BASE_URL` to call a separately hosted API. The frontend must point to a backend that implements all routes it uses; a successful `/api/health` response alone does not provide the application API.
 
-## Run locally
+## Requirements
 
-Requirements: Node.js 20.19+ or 22.12+, npm, and PostgreSQL.
+- Node.js 20.19 or newer
+- npm
+- PostgreSQL for the full application API (local or hosted, such as Neon)
 
-```sh
-npm install
-createdb wayfinder
-cp .env.example .env
-npm run dev:full
+## Local setup
+
+1. Install root dependencies:
+
+   ```sh
+   npm install
+   ```
+
+2. Create a database, or prepare a PostgreSQL connection string from your database provider.
+3. Copy `.env.example` to `.env` and set at least `DATABASE_URL` and `SESSION_SECRET`.
+4. Start the API and frontend together:
+
+   ```sh
+   npm run dev
+   ```
+
+The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `3001`. The API creates or updates its tables during startup. To run just one process, use `npm run api` or `npm run dev:web`.
+
+PowerShell environment-file setup:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`. Set `DATABASE_URL`, `OFFICER_USERNAME`, `OFFICER_PASSWORD`, `SESSION_SECRET`, and the SMTP settings in `.env` before starting. For Gmail, enable 2-Step Verification on `vikhileshkrishna@gmail.com` and create a Google App Password; put that value in `SMTP_PASSWORD`, not your regular Gmail password. `SMTP_FROM_NAME=Travel_tech` sets the sender display name. Gmail requires `SMTP_FROM_EMAIL` to be your Gmail address or a verified send-as alias. Set `SMTP_REPLY_TO` to a real no-reply address or alias you control; Gmail cannot send as an arbitrary unverified address. Set `SMS_HELP_NUMBER` only if you want the public SMS fallback link; leave it empty to hide that link. Optional outbound hazard SMS setup is described below. The API creates the hazards, officer, OTP, tourist-help, and SMS subscription tables on startup. In the sidebar, open **Officer login**, choose **Register**, enter the officer email, username, and password, then request and verify the emailed code. Codes expire after 10 minutes and allow five attempts. Passwords are stored as bcrypt hashes; OTPs are stored as keyed hashes. Keep `.env` private; `.env.example` contains placeholders only. The Vite development server proxies `/api` to the Express server. In production, deploy the API behind the same origin as the frontend and provide the environment variables there.
+For a hosted PostgreSQL provider, use the provider's complete connection URL as `DATABASE_URL`. Keep it in the backend environment only. Do not use it as `VITE_API_BASE_URL` or commit it to Git.
 
-Build and serve the production bundle locally:
+## Configuration
+
+### Full application API
+
+Set these in the environment where `server/index.js` runs:
+
+| Variable                                                                                                                       | Purpose                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                                                                 | PostgreSQL connection string.                                                                                                     |
+| `SESSION_SECRET`                                                                                                               | Signs officer session cookies; use a long random value.                                                                           |
+| `OFFICER_USERNAME`, `OFFICER_PASSWORD`                                                                                         | Optional configured officer login. Prefer a strong password.                                                                      |
+| `API_PORT`                                                                                                                     | Local API port; defaults to `3001`.                                                                                               |
+| `API_PROXY_TARGET`                                                                                                             | Vite development proxy destination; defaults to `http://localhost:3001`.                                                          |
+| `FRONTEND_ORIGINS`                                                                                                             | Comma-separated allowed browser origins for cross-origin API calls.                                                               |
+| `COOKIE_SAME_SITE`                                                                                                             | Session cookie policy; keep `strict` for same-site. Cross-site requires HTTPS and `none`, subject to browser cookie restrictions. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`                                                      | Optional officer email-registration delivery. Keep SMTP credentials server-side.                                                  |
+| `SMS_HELP_NUMBER`                                                                                                              | Optional public contact number for the user-initiated SMS link.                                                                   |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`, `TWILIO_SMS_FROM_NUMBER`, `TWILIO_INBOUND_WEBHOOK_URL` | Optional verified SMS subscriptions and notifications. Keep these server-side.                                                    |
+
+### Frontend API origin
+
+`VITE_API_BASE_URL` is embedded in the frontend at build time and is therefore public. Set it to the API origin only, for example `https://api.example.com`, with no trailing slash. It must never contain a database URL, password, or provider secret. Leave it blank for local development with the Vite proxy.
+
+## Deployment
+
+### Vercel frontend
+
+For the current Vite frontend, configure the Vercel project with:
+
+- Root directory: repository root
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_API_BASE_URL=https://<your-full-api-origin>`
+
+Redeploy after setting or changing `VITE_API_BASE_URL`. On the API host, set `FRONTEND_ORIGINS` to the exact Vercel site origin.
+
+**The complete application API is not currently deployed as Vercel functions in this repository.** `backend/api/health.js` is only a database health check. To make the deployed frontend fully functional, deploy `server/index.js` as a persistent Node API service or implement the required application endpoints as serverless functions, then set `VITE_API_BASE_URL` to that service. The Vercel health endpoint can confirm database connectivity, but it cannot replace those routes.
+
+No public deployment URL is currently recorded in this repository.
+
+## Application API
+
+The full Express API in `server/index.js` provides:
+
+| Route                                      | Access            | Purpose                                                   |
+| ------------------------------------------ | ----------------- | --------------------------------------------------------- |
+| `GET /api/hazards`                         | Public            | Read unexpired hazard reports.                            |
+| `POST /api/hazards`                        | Officer session   | Publish a hazard report.                                  |
+| `DELETE /api/hazards/:id`                  | Owning officer    | Delete a report created by the signed-in officer.         |
+| `GET /api/officer/session`                 | Public            | Check officer session state.                              |
+| `POST /api/officer/login`                  | Public            | Sign in an officer.                                       |
+| `POST /api/officer/register/*`             | Public, email OTP | Register an officer account. Requires SMTP configuration. |
+| `GET /api/officer/hazards`                 | Officer session   | List IDs owned by the signed-in officer.                  |
+| `GET /api/officer/help-queue`              | Officer session   | Read tourist assistance actions.                          |
+| `POST /api/help-queue`                     | Public            | Record a help action.                                     |
+| `POST /api/translate-alert`                | Public            | Translate alert text.                                     |
+| `POST /api/sms/subscriptions/request-code` | Public            | Send a phone verification code when Twilio is configured. |
+| `POST /api/sms/subscriptions/verify`       | Public            | Verify and subscribe a phone number to a region.          |
+| `POST /api/sms/twilio/inbound`             | Twilio signature  | Process SMS opt-out keywords.                             |
+
+The separate Vercel function currently exposes only `GET /api/health`.
+
+## SMS notifications
+
+SMS is optional and disabled unless all Twilio variables are configured on the application API. Travelers select a region, enter an international-format phone number, consent, and verify ownership. Verified subscribers receive notifications for reports in that region. Demo reports are labeled as demos; other officer reports are identified as unverified. A signed inbound Twilio message containing `STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, or `QUIT` removes that number's subscriptions.
+
+Twilio Verify and messaging are paid services; carrier availability and rates vary. Translations use an external Google Translate endpoint when available and can fall back to English. SMS delivery has not been live-tested in this repository's environment.
+
+## Offline behavior
+
+- Use **Save for offline** to store a browser-local snapshot of available area information in IndexedDB.
+- The service worker caches the app shell and network-first public reads. Confirmed hazard deletions invalidate cached hazard data.
+- OpenStreetMap tiles are not downloaded for offline use. Offline maps use only available saved data.
+- Offline snapshots do not receive updates. A saved report is not a current or verified warning.
+
+## Safety, privacy, and limitations
+
+- No official IMD or NDMA SACHET alert feed is connected.
+- Officer reports are not independently verified; demo content is labeled.
+- “Is this safe?” does not infer safety. Without relevant official records, it returns the fixed no-official-information guidance.
+- The full API stores officer reports and verified SMS subscription phone numbers in PostgreSQL. Configure access, backups, retention, and deletion policies before real-world use.
+- Do not use this prototype to make evacuation, route, shelter, or rescue decisions. In India, call **112** for emergencies.
+- Before production use, add verified official-source ingestion, stronger production identity management, audit logging, rate limiting, privacy review, and security testing.
+
+## Commands
 
 ```sh
-npm run build
-npm run preview
+npm run dev       # Run the frontend and full local API
+npm run dev:web   # Run only Vite
+npm run api       # Run only the Express API
+npm run build     # Build the frontend
+npm run preview   # Preview the production frontend bundle
+npm run lint      # Run Oxlint
 ```
 
-## Deploy frontend to Vercel with the hosted API
+## Libraries and external services
 
-Import this repository into Vercel and use the Vite defaults: build command `npm run build`, output directory `dist`, and root directory `.`. In Vercel Project Settings → Environment Variables, set `VITE_API_BASE_URL` to the origin of the already deployed API, for example `https://your-api.example.com` (no trailing slash). This value is public and must contain only the API origin, never the Neon connection string or other credentials. Redeploy after adding/changing it because Vite embeds it at build time.
-
-On the API host, set `FRONTEND_ORIGINS` to the exact deployed Vercel origin, such as `https://your-project.vercel.app`, and retain `DATABASE_URL` only in that backend host's secrets. The API allows credentialed CORS only from listed origins. For officer login across different sites, set `COOKIE_SAME_SITE=none` and run the API over HTTPS. Browser third-party-cookie restrictions can still block officer sessions when Vercel and the API use unrelated domains; for reliable officer login, use custom frontend/API hostnames under the same parent domain or proxy `/api` through a same-origin deployment. Public traveler reads do not require officer cookies.
-
-For local development, leave `VITE_API_BASE_URL` blank; Vite proxies `/api` to `API_PROXY_TARGET` (defaults to `http://localhost:3001`). No API origin means the deployed frontend will request `/api` from Vercel itself, so configure `VITE_API_BASE_URL` before deploying.
-
-A public deployment link and demo video still need to be created and added for the hackathon submission.
-
-## Offline use
-
-- Hotel QR links can point to `/?area=kerala` or `/?area=wayanad`; the area selector remains available as a manual fallback.
-- While online, open the desired area and choose **Save for offline**. Its hazards, available weather, road note, emergency number, and safety instruction are stored in this browser's IndexedDB with a saved timestamp. No shelter feed or road geometry is currently supplied, so the snapshot records shelters as unavailable and does not invent map features.
-- Test the installed service worker with `npm run build` followed by `npm run preview`. Load and save an area once online, then use browser DevTools Network → Offline and reload the preview URL. The banner shows the saved time and warns when the snapshot is over six hours old.
-- Offline maps use a plain background and saved geometry only; the app does not download OpenStreetMap tile sets. The current hazard feed provides points, not official zone polygons.
-- Offline safety answers use only saved, unexpired, non-demo reports. Otherwise the app displays: “No official information yet for this area. Follow local authority instructions.” Offline use cannot receive new alerts or verify current conditions.
-- “I’m safe” and “I need help” actions are stored locally and retried when connectivity returns. If `SMS_HELP_NUMBER` is configured, the app also offers a prefilled SMS link; the user must review and send it in their messaging app.
-
-## Public APIs and libraries
-
-- React 19 and Vite: frontend and build tooling.
-- Leaflet: interactive map UI.
-- OpenStreetMap standard tile service: map tiles; attribution is displayed on the map. Follow the tile usage policy before production-scale use.
-- Open-Meteo Forecast API: current weather at the selected demo area, without an API key. Weather is contextual information, not an official hazard warning.
-- Google Translate web endpoint: automatic Hindi, Malayalam, and Dutch translations for officer bulletin text. Bulletin text is sent to the translation service; the submitted original remains available in the report. Machine translations can be inaccurate and must not replace checking the issuing authority source.
-- Lucide React: interface icons.
-- Google Fonts: DM Sans and Fraunces typefaces.
-
-Set `SMS_HELP_NUMBER` in the server `.env` to a public contact number in international format (for example `+919876543210`) to show the optional “Send help by SMS” link. Leave it empty to hide the link. The browser receives this public number through `/api/public-config`; no server secrets are sent to the client.
-
-## SMS hazard alerts
-
-Outbound alerts use Twilio Verify for phone ownership and Twilio Programmable Messaging for delivery. Configure `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`, and `TWILIO_SMS_FROM_NUMBER` in the server environment. Set `TWILIO_INBOUND_WEBHOOK_URL` to the exact public HTTPS URL ending in `/api/sms/twilio/inbound`, then configure the Twilio sender's incoming-message webhook to that same URL. All five values are required before the opt-in form is enabled. Keep the auth token server-side; never expose it through a `VITE_` variable.
-
-Travelers choose a region, enter an international-format number, explicitly consent, and verify ownership with a one-time SMS code. Only verified numbers are stored, keyed by phone and region. A successfully saved officer hazard triggers an alert only for verified subscribers to its selected region. Demo reports are labeled **DEMO ALERT**; other officer reports are labeled unverified. Messages include source and expiry and use the subscriber's selected language when Google translation is available, otherwise English. Delivery failures do not undo hazard creation; officers receive a delivery summary. A signed Twilio inbound message with `STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, or `QUIT` deletes that phone's subscriptions.
-
-Twilio Verify and SMS are paid services; prices and carrier delivery vary by destination. This integration is provider-ready but has not been live-tested without configured account credentials. The opt-in remains disabled until all required settings are present.
-
-No key is needed for weather or maps. The backend does require PostgreSQL, officer/session settings, and SMTP credentials for officer registration emails; optional SMS requires Twilio credentials. Open-Meteo, map tiles, and automatic bulletin translation require an internet connection. Offline snapshots do not receive updates.
-
-## Demo walkthrough
-
-1. Select **Kerala coast** or **Wayanad hills** to inspect the illustrative scenario and live weather panel.
-2. Open **Officer login**, sign in with the configured credentials, and submit a hazard report with coordinates.
-3. Return to **Traveler view** to see the shared report in the feed and as a map marker. The feed refreshes every 30 seconds.
-4. Ask “Is this safe?” and confirm that the app gives the fixed no-official-information response; officer-submitted reports are not treated as independently verified official guidance.
-
-## Limitations and next work
-
-- Verify an official NDMA SACHET CAP feed and IMD source before displaying real alerts. Neither feed is currently queried; the prototype does not claim their availability.
-- Replace the configured single officer credential with managed officer accounts, multi-factor authentication, role checks, and audit logs before production use.
-- Add validated alert normalization, geofencing, approved message templates, translations, source/timestamp presentation, and strict Gemini JSON handling only behind server routes. “Is this safe?” must continue to return the fixed fallback when no relevant official record exists.
-- Add RLS to every Supabase table, input validation, per-IP rate limiting, safe error handling, and logged-out authorization tests. Never put Gemini or Supabase service-role keys in a browser environment variable.
-- Offline snapshots are browser-local and are not synchronized between devices. Shelter/road geometry and automatic official alert ingestion are not provided by the current data sources.
-- Web Push, Telegram, WhatsApp, Expo Go, and an installable Android APK are not implemented. SMS requires a funded/configured Twilio account and has not been live-tested.
-- Do not use this prototype to make real evacuation, route, shelter, or rescue decisions. Emergency services in India: **112**.
-- Minimize location collection in any future backend; prefer manual area selection. Explain location use and implement event-based deletion/anonymization for location and chat data.
-- Before real deployment, add signed official-source ingestion, audit logs, two-factor official login, privacy review, and moderation for traveler reports.
-- Run `npm audit` before deployment. Verify authority endpoints while logged out and confirm they refuse access once those endpoints exist.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- React, Vite, Express, and PostgreSQL (`pg`)
+- Leaflet and OpenStreetMap tiles
+- Open-Meteo Forecast API
+- Twilio Verify and Programmable Messaging (optional, paid)
+- Google Translate web endpoint for officer bulletin translations
+- Lucide React, Nodemailer, and bcryptjs
