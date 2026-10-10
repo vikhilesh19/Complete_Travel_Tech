@@ -5,6 +5,169 @@ export const LANGUAGES = [
   { code: "nl", label: "Dutch", flag: "🇳🇱", native: "Nederlands" },
 ];
 
+export const hazardReportTranslations = {
+  en: {
+    eyebrow: "SHARED FIELD REPORTS",
+    heading: "Hazards reported by officers",
+    reportCount: "reports",
+    loading: "Loading shared reports…",
+    unavailable: "Shared reports are currently unavailable.",
+    empty: "No officer hazard reports have been published.",
+    demo: "DEMO ALERT",
+    official: "OFFICIAL ALERT",
+    expectedOnset: "Expected onset",
+    expires: "Expires",
+    notSpecified: "Not specified",
+    source: "Source",
+    viewSource: "View source",
+    mapOriginal: "Original bulletin",
+    mapTranslationNote: "Machine-translated bulletin",
+    published: "Published",
+    originalText: "View original bulletin",
+    machineTranslationNote:
+      "Machine-translated. Compare with the original bulletin before acting.",
+    translating: "Translating alert…",
+    translationUnavailable:
+      "Translation unavailable. Showing original bulletin.",
+    disclaimer:
+      "Published alerts are shared as submitted. Check the linked issuing authority source before acting.",
+    severities: {
+      danger: "Danger (red)",
+      warning: "Warning (orange)",
+      advisory: "Advisory (yellow)",
+      information: "Information (blue)",
+    },
+    hazards: {
+      Cyclone: "Cyclone",
+      Flood: "Flood",
+      Landslide: "Landslide",
+      "Storm surge": "Storm surge",
+      "Heat wave": "Heat wave",
+      Other: "Other",
+    },
+  },
+  hi: {
+    eyebrow: "साझा क्षेत्रीय रिपोर्ट",
+    heading: "अधिकारियों द्वारा रिपोर्ट किए गए खतरे",
+    reportCount: "रिपोर्ट",
+    loading: "साझा रिपोर्ट लोड हो रही हैं…",
+    unavailable: "साझा रिपोर्ट अभी उपलब्ध नहीं हैं।",
+    empty: "अभी तक कोई अधिकारी खतरा रिपोर्ट प्रकाशित नहीं हुई है।",
+    demo: "डेमो अलर्ट",
+    official: "आधिकारिक अलर्ट",
+    expectedOnset: "संभावित शुरुआत",
+    expires: "समाप्ति समय",
+    notSpecified: "निर्दिष्ट नहीं",
+    source: "स्रोत",
+    viewSource: "स्रोत देखें",
+    mapOriginal: "मूल बुलेटिन",
+    mapTranslationNote: "मशीन-अनुवादित बुलेटिन",
+    published: "प्रकाशित",
+    originalText: "मूल बुलेटिन देखें",
+    machineTranslationNote:
+      "मशीन द्वारा अनुवादित। कार्रवाई से पहले मूल बुलेटिन से मिलान करें।",
+    translating: "अलर्ट का अनुवाद हो रहा है…",
+    translationUnavailable:
+      "अनुवाद उपलब्ध नहीं है। मूल बुलेटिन दिखाया जा रहा है।",
+    disclaimer:
+      "अलर्ट उसी रूप में साझा किए जाते हैं जिस रूप में उन्हें जमा किया गया। कार्रवाई से पहले संबंधित प्राधिकरण के स्रोत की जाँच करें।",
+    severities: {
+      danger: "खतरा (लाल)",
+      warning: "चेतावनी (नारंगी)",
+      advisory: "सलाह (पीला)",
+      information: "जानकारी (नीला)",
+    },
+    hazards: {
+      Cyclone: "चक्रवात",
+      Flood: "बाढ़",
+      Landslide: "भूस्खलन",
+      "Storm surge": "समुद्री तूफ़ान की लहर",
+      "Heat wave": "लू",
+      Other: "अन्य",
+    },
+  },
+  ml: {
+    eyebrow: "പങ്കിട്ട ഫീൽഡ് റിപ്പോർട്ടുകൾ",
+    heading: "ഉദ്യോഗസ്ഥർ റിപ്പോർട്ട് ചെയ്ത അപകടങ്ങൾ",
+    reportCount: "റിപ്പോർട്ടുകൾ",
+    loading: "പങ്കിട്ട റിപ്പോർട്ടുകൾ ലോഡ് ചെയ്യുന്നു…",
+    unavailable: "പങ്കിട്ട റിപ്പോർട്ടുകൾ ഇപ്പോൾ ലഭ്യമല്ല.",
+    empty: "ഉദ്യോഗസ്ഥർ അപകട റിപ്പോർട്ടുകളൊന്നും പ്രസിദ്ധീകരിച്ചിട്ടില്ല.",
+    demo: "ഡെമോ മുന്നറിയിപ്പ്",
+    official: "ഔദ്യോഗിക മുന്നറിയിപ്പ്",
+    expectedOnset: "പ്രതീക്ഷിക്കുന്ന ആരംഭം",
+    expires: "കാലാവധി അവസാനിക്കുന്നത്",
+    notSpecified: "നൽകിയിട്ടില്ല",
+    source: "ഉറവിടം",
+    viewSource: "ഉറവിടം കാണുക",
+    mapOriginal: "യഥാർത്ഥ ബുള്ളറ്റിൻ",
+    mapTranslationNote: "യന്ത്രവിവർത്തനം ചെയ്ത ബുള്ളറ്റിൻ",
+    published: "പ്രസിദ്ധീകരിച്ചത്",
+    originalText: "യഥാർത്ഥ ബുള്ളറ്റിൻ കാണുക",
+    machineTranslationNote:
+      "യന്ത്രവിവർത്തനമാണ്. നടപടിയെടുക്കുന്നതിന് മുമ്പ് യഥാർത്ഥ ബുള്ളറ്റിനുമായി താരതമ്യം ചെയ്യുക.",
+    translating: "മുന്നറിയിപ്പ് വിവർത്തനം ചെയ്യുന്നു…",
+    translationUnavailable:
+      "വിവർത്തനം ലഭ്യമല്ല. യഥാർത്ഥ ബുള്ളറ്റിൻ കാണിക്കുന്നു.",
+    disclaimer:
+      "സമർപ്പിച്ച അതേ രൂപത്തിലാണ് മുന്നറിയിപ്പുകൾ പങ്കിടുന്നത്. നടപടിയെടുക്കുന്നതിന് മുമ്പ് ബന്ധപ്പെട്ട അധികാരിയുടെ ഉറവിടം പരിശോധിക്കുക.",
+    severities: {
+      danger: "അപകടം (ചുവപ്പ്)",
+      warning: "മുന്നറിയിപ്പ് (ഓറഞ്ച്)",
+      advisory: "ഉപദേശം (മഞ്ഞ)",
+      information: "വിവരം (നീല)",
+    },
+    hazards: {
+      Cyclone: "ചുഴലിക്കാറ്റ്",
+      Flood: "വെള്ളപ്പൊക്കം",
+      Landslide: "ഉരുൾപൊട്ടൽ",
+      "Storm surge": "കടൽക്ഷോഭം",
+      "Heat wave": "ഉഷ്ണതരംഗം",
+      Other: "മറ്റുള്ളവ",
+    },
+  },
+  nl: {
+    eyebrow: "GEDEELDE VELDMELDINGEN",
+    heading: "Gevaren gemeld door functionarissen",
+    reportCount: "meldingen",
+    loading: "Gedeelde meldingen laden…",
+    unavailable: "Gedeelde meldingen zijn momenteel niet beschikbaar.",
+    empty: "Er zijn nog geen gevaren gemeld door functionarissen.",
+    demo: "DEMOMELDING",
+    official: "OFFICIËLE WAARSCHUWING",
+    expectedOnset: "Verwacht begin",
+    expires: "Verloopt",
+    notSpecified: "Niet opgegeven",
+    source: "Bron",
+    viewSource: "Bron bekijken",
+    mapOriginal: "Origineel bulletin",
+    mapTranslationNote: "Automatisch vertaald bulletin",
+    published: "Gepubliceerd",
+    originalText: "Origineel bulletin bekijken",
+    machineTranslationNote:
+      "Automatisch vertaald. Vergelijk met het originele bulletin voordat u handelt.",
+    translating: "Waarschuwing vertalen…",
+    translationUnavailable:
+      "Vertaling niet beschikbaar. Origineel bulletin wordt getoond.",
+    disclaimer:
+      "Meldingen worden gedeeld zoals ingediend. Controleer de bron van de uitgevende instantie voordat u handelt.",
+    severities: {
+      danger: "Gevaar (rood)",
+      warning: "Waarschuwing (oranje)",
+      advisory: "Advies (geel)",
+      information: "Informatie (blauw)",
+    },
+    hazards: {
+      Cyclone: "Cycloon",
+      Flood: "Overstroming",
+      Landslide: "Aardverschuiving",
+      "Storm surge": "Stormvloed",
+      "Heat wave": "Hittegolf",
+      Other: "Overig",
+    },
+  },
+};
+
 export const translations = {
   en: {
     sidebar: {
@@ -13,7 +176,8 @@ export const translations = {
       overview: "Traveler view",
       authority: "Officer login",
       officialSourcesFirst: "Official sources first",
-      distinguishVerified: "We distinguish verified updates from demo information.",
+      distinguishVerified:
+        "We distinguish verified updates from demo information.",
       emergencyInIndia: "Emergency in India",
       emergencyNumber: "112",
       footer: "WAYFINDER · HACKATHON DEMO",
@@ -47,7 +211,8 @@ export const translations = {
         severity: "High",
         zone: "Meppadi · Wayanad district",
         time: "Demo scenario · 11:05 AM",
-        action: "Keep clear of steep slopes and use only confirmed open routes.",
+        action:
+          "Keep clear of steep slopes and use only confirmed open routes.",
         road: "Meppadi–Chooralmala · illustrative status",
       },
     },
@@ -95,7 +260,8 @@ export const translations = {
     help: {
       eyebrow: "QUICK RESPONSE",
       heading: "Let someone know",
-      intro: "These actions stay on this device in the demo. No location is shared.",
+      intro:
+        "These actions stay on this device in the demo. No location is shared.",
       imSafe: "I’m safe",
       imSafeSub: "Mark yourself as safe",
       needHelp: "I need help",
@@ -104,17 +270,21 @@ export const translations = {
       callbackSub: "Ask an operator to contact you",
       callEmergency: "Call India emergency services",
       emergencyNumber: "112",
-      caveat: "For immediate danger, call 112 directly. Demo requests are not sent to responders.",
+      caveat:
+        "For immediate danger, call 112 directly. Demo requests are not sent to responders.",
     },
     askSafety: {
       eyebrow: "ASK ABOUT YOUR AREA",
       heading: "Is this safe?",
-      prompt: "Ask about conditions near {place}. Answers use official alert data only.",
+      prompt:
+        "Ask about conditions near {place}. Answers use official alert data only.",
       ariaLabel: "Ask a safety question",
       placeholder: "e.g. Is it safe to travel to the coast?",
       submitTitle: "Submit question",
-      noInfo: "No official information yet for this area. Follow local authority instructions.",
-      subInfo: "No official alert service is connected in this demo. Demo scenarios are not used to answer safety questions.",
+      noInfo:
+        "No official information yet for this area. Follow local authority instructions.",
+      subInfo:
+        "No official alert service is connected in this demo. Demo scenarios are not used to answer safety questions.",
     },
     routeNote: {
       eyebrow: "ROUTE NOTE",
@@ -142,7 +312,8 @@ export const translations = {
       overview: "यात्री दृश्य",
       authority: "अधिकारी लॉगिन",
       officialSourcesFirst: "आधिकारिक स्रोत पहले",
-      distinguishVerified: "हम सत्यापित सूचनाओं को डेमो जानकारी से अलग रखते हैं।",
+      distinguishVerified:
+        "हम सत्यापित सूचनाओं को डेमो जानकारी से अलग रखते हैं।",
       emergencyInIndia: "भारत में आपातकालीन नंबर",
       emergencyNumber: "112",
       footer: "वेफ़ाइंडर · हैकाथॉन डेमो",
@@ -165,7 +336,8 @@ export const translations = {
         severity: "उच्च",
         zone: "फोर्ट कोच्चि · एर्नाकुलम तट",
         time: "डेमो परिदृश्य · सुबह 10:30 बजे",
-        action: "तटरेखा से अंतर्देशीय क्षेत्र में जाएं और निचले इलाकों की सड़कों से बचें।",
+        action:
+          "तटरेखा से अंतर्देशीय क्षेत्र में जाएं और निचले इलाकों की सड़कों से बचें।",
         road: "तटीय सड़क · उदाहरणात्मक स्थिति",
       },
       wayanad: {
@@ -176,7 +348,8 @@ export const translations = {
         severity: "उच्च",
         zone: "मेप्पाडी · वायनाड ज़िला",
         time: "डेमो परिदृश्य · सुबह 11:05 बजे",
-        action: "खड़ी ढलानों से दूर रहें और केवल पुष्टि किए गए खुले मार्गों का उपयोग करें।",
+        action:
+          "खड़ी ढलानों से दूर रहें और केवल पुष्टि किए गए खुले मार्गों का उपयोग करें।",
         road: "मेप्पाडी–चूरलमाला · उदाहरणात्मक स्थिति",
       },
     },
@@ -224,7 +397,8 @@ export const translations = {
     help: {
       eyebrow: "त्वरित सहायता",
       heading: "किसी को सूचित करें",
-      intro: "ये कार्रवाइयां डेमो में केवल इसी डिवाइस पर रहेंगी। कोई लोकेशन साझा नहीं की जाती।",
+      intro:
+        "ये कार्रवाइयां डेमो में केवल इसी डिवाइस पर रहेंगी। कोई लोकेशन साझा नहीं की जाती।",
       imSafe: "मैं सुरक्षित हूँ",
       imSafeSub: "खुद को सुरक्षित चिह्नित करें",
       needHelp: "मुझे मदद चाहिए",
@@ -233,16 +407,19 @@ export const translations = {
       callbackSub: "ऑपरेटर से संपर्क करने का अनुरोध करें",
       callEmergency: "भारत आपातकालीन सेवा (112)",
       emergencyNumber: "112",
-      caveat: "तत्काल खतरे के लिए सीधे 112 डायल करें। डेमो अनुरोध बचाव दल को नहीं भेजे जाते हैं।",
+      caveat:
+        "तत्काल खतरे के लिए सीधे 112 डायल करें। डेमो अनुरोध बचाव दल को नहीं भेजे जाते हैं।",
     },
     askSafety: {
       eyebrow: "अपने क्षेत्र के बारे में पूछें",
       heading: "क्या यह सुरक्षित है?",
-      prompt: "{place} के पास की स्थिति के बारे में पूछें। केवल आधिकारिक डेटा का उपयोग किया जाता है।",
+      prompt:
+        "{place} के पास की स्थिति के बारे में पूछें। केवल आधिकारिक डेटा का उपयोग किया जाता है।",
       ariaLabel: "सुरक्षा संबंधी प्रश्न पूछें",
       placeholder: "उदा. क्या तट की यात्रा करना सुरक्षित है?",
       submitTitle: "प्रश्न भेजें",
-      noInfo: "इस क्षेत्र के लिए अभी तक कोई आधिकारिक जानकारी नहीं है। स्थानीय प्रशासन के निर्देशों का पालन करें।",
+      noInfo:
+        "इस क्षेत्र के लिए अभी तक कोई आधिकारिक जानकारी नहीं है। स्थानीय प्रशासन के निर्देशों का पालन करें।",
       subInfo: "इस डेमो में कोई आधिकारिक अलर्ट सेवा कनेक्ट नहीं है।",
     },
     routeNote: {
@@ -271,7 +448,8 @@ export const translations = {
       overview: "യാത്രക്കാരുടെ കാഴ്‌ച",
       authority: "ഉദ്യോഗസ്ഥ ലോഗിൻ",
       officialSourcesFirst: "ഔദ്യോഗിക ഉറവിടങ്ങൾക്ക് മുൻഗണന",
-      distinguishVerified: "സ്ഥിരീകരിച്ച വിവരങ്ങളും ഡെമോ വിവരങ്ങളും ഞങ്ങൾ വേർതിരിച്ചു കാണിക്കുന്നു.",
+      distinguishVerified:
+        "സ്ഥിരീകരിച്ച വിവരങ്ങളും ഡെമോ വിവരങ്ങളും ഞങ്ങൾ വേർതിരിച്ചു കാണിക്കുന്നു.",
       emergencyInIndia: "ഇന്ത്യയിലെ എമർജൻസി നമ്പർ",
       emergencyNumber: "112",
       footer: "വേഫൈൻഡർ · ഹാക്കത്തോൺ ഡെമോ",
@@ -294,7 +472,8 @@ export const translations = {
         severity: "തീവ്രം",
         zone: "ഫോർട്ട് കൊച്ചി · എറണാകുളം തീരം",
         time: "ഡെമോ സാഹചര്യം · 10:30 AM",
-        action: "തീരത്തുനിന്ന് ഉൾനാടൻ പ്രദേശങ്ങളിലേക്ക് മാറുക, താഴ്ന്ന റോഡുകൾ ഒഴിവാക്കുക.",
+        action:
+          "തീരത്തുനിന്ന് ഉൾനാടൻ പ്രദേശങ്ങളിലേക്ക് മാറുക, താഴ്ന്ന റോഡുകൾ ഒഴിവാക്കുക.",
         road: "തീരദേശ റോഡ് · മാതൃകാ വിവരം",
       },
       wayanad: {
@@ -305,7 +484,8 @@ export const translations = {
         severity: "തീവ്രം",
         zone: "മേപ്പാടി · വയനാട് ജില്ല",
         time: "ഡെമോ സാഹചര്യം · 11:05 AM",
-        action: "കുത്തനെയുള്ള മലഞ്ചെരിവുകളിൽ നിന്ന് മാറിനിൽക്കുക, തുറന്ന റൂട്ടുകൾ മാത്രം ഉപയോഗിക്കുക.",
+        action:
+          "കുത്തനെയുള്ള മലഞ്ചെരിവുകളിൽ നിന്ന് മാറിനിൽക്കുക, തുറന്ന റൂട്ടുകൾ മാത്രം ഉപയോഗിക്കുക.",
         road: "മേപ്പാടി–ചൂരൽമല · മാതൃകാ വിവരം",
       },
     },
@@ -362,16 +542,19 @@ export const translations = {
       callbackSub: "ഓപ്പറേറ്ററോട് തിരികെ വിളിക്കാൻ പറയുക",
       callEmergency: "അടിയന്തര സേവനത്തിലേക്ക് വിളിക്കുക",
       emergencyNumber: "112",
-      caveat: "അടിയന്തിര ഘട്ടങ്ങളിൽ നേരിട്ട് 112 ലേക്ക് വിളിക്കുക. ഡെമോ അഭ്യർത്ഥനകൾ പോലീസിലേക്ക് പോകുന്നില്ല.",
+      caveat:
+        "അടിയന്തിര ഘട്ടങ്ങളിൽ നേരിട്ട് 112 ലേക്ക് വിളിക്കുക. ഡെമോ അഭ്യർത്ഥനകൾ പോലീസിലേക്ക് പോകുന്നില്ല.",
     },
     askSafety: {
       eyebrow: "നിങ്ങളുടെ പ്രദേശത്തെക്കുറിച്ച് ചോദിക്കുക",
       heading: "ഇത് സുരക്ഷിതമാണോ?",
-      prompt: "{place} സമീപത്തെ സാഹചര്യങ്ങളെക്കുറിച്ച് ചോദിക്കുക. ഔദ്യോഗിക വിവരങ്ങൾ മാത്രം.",
+      prompt:
+        "{place} സമീപത്തെ സാഹചര്യങ്ങളെക്കുറിച്ച് ചോദിക്കുക. ഔദ്യോഗിക വിവരങ്ങൾ മാത്രം.",
       ariaLabel: "സുരക്ഷാ ചോദ്യം ചോദിക്കുക",
       placeholder: "ഉദാ: തീരത്തേക്ക് യാത്ര ചെയ്യുന്നത് സുരക്ഷിതമാണോ?",
       submitTitle: "ചോദ്യം സമർപ്പിക്കുക",
-      noInfo: "ഈ പ്രദേശത്തിനായി ഇതുവരെ ഔദ്യോഗിക വിവരങ്ങളൊന്നുമില്ല. പ്രാദേശിക അധികാരികളുടെ നിർദ്ദേശങ്ങൾ പാലിക്കുക.",
+      noInfo:
+        "ഈ പ്രദേശത്തിനായി ഇതുവരെ ഔദ്യോഗിക വിവരങ്ങളൊന്നുമില്ല. പ്രാദേശിക അധികാരികളുടെ നിർദ്ദേശങ്ങൾ പാലിക്കുക.",
       subInfo: "ഈ ഡെമോയിൽ ഔദ്യോഗിക മുന്നറിയിപ്പ് സേവനം ബന്ധിപ്പിച്ചിട്ടില്ല.",
     },
     routeNote: {
@@ -400,7 +583,8 @@ export const translations = {
       overview: "Reizigersoverzicht",
       authority: "Beheerderslogin",
       officialSourcesFirst: "Officiële bronnen eerst",
-      distinguishVerified: "Wij onderscheiden geverifieerde updates van demo-informatie.",
+      distinguishVerified:
+        "Wij onderscheiden geverifieerde updates van demo-informatie.",
       emergencyInIndia: "Noodgeval in India",
       emergencyNumber: "112",
       footer: "WAYFINDER · HACKATHON DEMO",
@@ -423,7 +607,8 @@ export const translations = {
         severity: "Hoog",
         zone: "Fort Kochi · Ernakulam kust",
         time: "Demo-scenario · 10:30 uur",
-        action: "Beweeg landinwaarts vanaf de kustlijn en vermijd laaggelegen wegen.",
+        action:
+          "Beweeg landinwaarts vanaf de kustlijn en vermijd laaggelegen wegen.",
         road: "Kustweg · illustratieve status",
       },
       wayanad: {
@@ -434,7 +619,8 @@ export const translations = {
         severity: "Hoog",
         zone: "Meppadi · Wayanad district",
         time: "Demo-scenario · 11:05 uur",
-        action: "Blijf uit de buurt van steile hellingen en gebruik alleen bevestigde open routes.",
+        action:
+          "Blijf uit de buurt van steile hellingen en gebruik alleen bevestigde open routes.",
         road: "Meppadi–Chooralmala · illustratieve status",
       },
     },
@@ -482,7 +668,8 @@ export const translations = {
     help: {
       eyebrow: "SNELLE REACTIE",
       heading: "Laat iemand iets weten",
-      intro: "Deze acties blijven in de demo op dit apparaat. Er wordt geen locatie gedeeld.",
+      intro:
+        "Deze acties blijven in de demo op dit apparaat. Er wordt geen locatie gedeeld.",
       imSafe: "Ik ben veilig",
       imSafeSub: "Markeer uzelf als veilig",
       needHelp: "Ik heb hulp nodig",
@@ -491,17 +678,21 @@ export const translations = {
       callbackSub: "Vraag een medewerker om contact op te nemen",
       callEmergency: "Bel Indiase nooddiensten",
       emergencyNumber: "112",
-      caveat: "Bel bij direct gevaar direct 112. Demo-verzoeken worden niet naar hulpdiensten verzonden.",
+      caveat:
+        "Bel bij direct gevaar direct 112. Demo-verzoeken worden niet naar hulpdiensten verzonden.",
     },
     askSafety: {
       eyebrow: "VRAAG OVER UW OMGEVING",
       heading: "Is dit veilig?",
-      prompt: "Vraag naar omstandigheden nabij {place}. Antwoorden gebruiken alleen officiële gegevens.",
+      prompt:
+        "Vraag naar omstandigheden nabij {place}. Antwoorden gebruiken alleen officiële gegevens.",
       ariaLabel: "Stel een veiligheidsvraag",
       placeholder: "bijv. Is het veilig om naar de kust te reizen?",
       submitTitle: "Vraag versturen",
-      noInfo: "Nog geen officiële informatie voor dit gebied. Volg de instructies van lokale autoriteiten op.",
-      subInfo: "Er is geen officiële waarschuwingsdienst gekoppeld in deze demo.",
+      noInfo:
+        "Nog geen officiële informatie voor dit gebied. Volg de instructies van lokale autoriteiten op.",
+      subInfo:
+        "Er is geen officiële waarschuwingsdienst gekoppeld in deze demo.",
     },
     routeNote: {
       eyebrow: "ROUTENOTITIE",

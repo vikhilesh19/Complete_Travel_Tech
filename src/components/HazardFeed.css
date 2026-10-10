@@ -135,6 +135,32 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+.hazard-translation-note {
+  margin: -3px 0 10px;
+  color: #7b857e;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.hazard-original-text {
+  margin: 0 0 10px;
+  color: #59665d;
+  font-size: 9px;
+}
+.hazard-original-text summary {
+  width: fit-content;
+  color: #397052;
+  cursor: pointer;
+  font-weight: 700;
+}
+.hazard-original-text p {
+  margin: 7px 0 0;
+  padding: 9px;
+  border-left: 2px solid #cbd8cd;
+  color: #68756c;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
 .hazard-report-time {
   padding-top: 8px;
   border-top: 1px solid #edf0eb;

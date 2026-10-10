@@ -15,8 +15,86 @@ const pool = new Pool(
 const port = Number(process.env.API_PORT || 3001);
 const sessionLifetimeSeconds = 8 * 60 * 60;
 const sessionCookieName = "wayfinder_officer";
+const translationCache = new Map();
+const translationRequests = new Map();
 
 app.use(express.json({ limit: "16kb" }));
+
+app.post("/api/translate-alert", async (req, res) => {
+  const { text, language } = req.body || {};
+  const targetLanguages = new Set(["hi", "ml", "nl"]);
+  if (
+    typeof text !== "string" ||
+    text.trim().length === 0 ||
+    text.length > 5000 ||
+    !targetLanguages.has(language)
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Unsupported language or alert text." });
+  }
+
+  const now = Date.now();
+  const requester = req.ip || "unknown";
+  const recent = (translationRequests.get(requester) || []).filter(
+    (time) => now - time < 60_000,
+  );
+  if (recent.length >= 10) {
+    return res
+      .status(429)
+      .json({ error: "Translation limit reached. Try again shortly." });
+  }
+  recent.push(now);
+  translationRequests.set(requester, recent);
+
+  const cacheKey = crypto
+    .createHash("sha256")
+    .update(`${language}:${text}`)
+    .digest("hex");
+  const cached = translationCache.get(cacheKey);
+  if (cached && cached.expiresAt > now)
+    return res.json({ translatedText: cached.text });
+
+  try {
+    const chunks = text.match(/[\s\S]{1,450}(?:\s|$)|[\s\S]{1,450}/g) || [text];
+    const translatedChunks = [];
+    for (const chunk of chunks) {
+      const query = new URLSearchParams({
+        client: "gtx",
+        sl: "auto",
+        tl: language,
+        dt: "t",
+        q: chunk,
+      });
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?${query}`,
+        { signal: AbortSignal.timeout(10_000) },
+      );
+      if (!response.ok)
+        throw new Error(`Translation service returned ${response.status}.`);
+      const result = await response.json();
+      const translated = Array.isArray(result[0])
+        ? result[0].map((part) => part[0] || "").join("")
+        : "";
+      if (!translated) {
+        throw new Error("Translation service did not return translated text.");
+      }
+      translatedChunks.push(translated);
+    }
+    const translatedText = translatedChunks.join("");
+    translationCache.set(cacheKey, {
+      text: translatedText,
+      expiresAt: now + 86_400_000,
+    });
+    return res.json({ translatedText });
+  } catch (error) {
+    console.error("Alert translation unavailable:", error.message);
+    return res.status(503).json({
+      error:
+        "Translation is temporarily unavailable; the original alert text is unchanged.",
+    });
+  }
+});
 
 function safeEqual(first, second) {
   const firstBuffer = Buffer.from(first);
@@ -526,6 +604,9 @@ async function start() {
         ADD COLUMN IF NOT EXISTS source_url VARCHAR(500),
         ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT TRUE
     `);
+    await pool.query(
+      "ALTER TABLE hazards ALTER COLUMN severity TYPE VARCHAR(32), ALTER COLUMN description TYPE TEXT",
+    );
     await pool.query(
       "ALTER TABLE hazards DROP CONSTRAINT IF EXISTS hazards_severity_check",
     );

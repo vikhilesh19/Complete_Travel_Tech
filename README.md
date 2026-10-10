@@ -52,6 +52,7 @@ The static frontend can be deployed to Vercel with `npm run build` and `dist` as
 - Leaflet: interactive map UI.
 - OpenStreetMap standard tile service: map tiles; attribution is displayed on the map. Follow the tile usage policy before production-scale use.
 - Open-Meteo Forecast API: current weather at the selected demo area, without an API key. Weather is contextual information, not an official hazard warning.
+- Google Translate web endpoint: automatic Hindi, Malayalam, and Dutch translations for officer bulletin text. Bulletin text is sent to the translation service; the submitted original remains available in the report. Machine translations can be inaccurate and must not replace checking the issuing authority source.
 - Lucide React: interface icons.
 - Google Fonts: DM Sans and Fraunces typefaces.
 

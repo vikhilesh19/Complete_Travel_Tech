@@ -9,7 +9,7 @@ import HelpPanel from "./components/HelpPanel.jsx";
 import AskSafety from "./components/AskSafety.jsx";
 import OfficerDashboard from "./components/OfficerDashboard.jsx";
 import HazardFeed from "./components/HazardFeed.jsx";
-import { translations } from "./translations.js";
+import { hazardReportTranslations, translations } from "./translations.js";
 
 const placeConfig = {
   kerala: {
@@ -179,6 +179,10 @@ function App() {
               hazards={activeHazards}
               loading={hazardsLoading}
               error={hazardsError}
+              lang={lang}
+              text={
+                hazardReportTranslations[lang] || hazardReportTranslations.en
+              }
             />
             <section
               className="alert-weather-grid"
@@ -192,7 +196,15 @@ function App() {
               />
             </section>
             <section className="map-help-grid">
-              <MapView place={place} hazards={activeHazards} t={t.map} />
+              <MapView
+                place={place}
+                hazards={activeHazards}
+                t={t.map}
+                hazardText={
+                  hazardReportTranslations[lang] || hazardReportTranslations.en
+                }
+                lang={lang}
+              />
               <HelpPanel onSend={sendHelp} t={t.help} />
             </section>
             <AskSafety placeName={place.name} t={t.askSafety} />

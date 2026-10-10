@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Layers2, LocateFixed } from "lucide-react";
+import { translateAlert } from "../translateAlert.js";
 import "./MapView.css";
 
 const defaultMapText = {
@@ -22,7 +23,7 @@ const defaultMapText = {
   severity: "Severity",
 };
 
-function MapView({ place, hazards, t }) {
+function MapView({ place, hazards, t, hazardText, lang }) {
   const text = t || defaultMapText;
 
   const mapElement = useRef(null);
@@ -113,24 +114,60 @@ function MapView({ place, hazards, t }) {
       );
       const popup = document.createElement("div");
       const title = document.createElement("strong");
-      title.textContent = `${hazard.hazard} · ${text.officerReport}`;
+      const translatedHazard =
+        hazardText?.hazards[hazard.hazard] || hazard.hazard;
+      title.textContent = `${translatedHazard} · ${text.officerReport}`;
       const location = document.createElement("p");
       location.textContent = hazard.affected_zone || hazard.location;
       const description = document.createElement("p");
       description.textContent = hazard.alert_text || hazard.description;
+      const translationNote = document.createElement("small");
+      translationNote.textContent = "";
+      const originalBulletin = document.createElement("details");
+      const originalSummary = document.createElement("summary");
+      originalSummary.textContent =
+        hazardText?.mapOriginal || "Original bulletin";
+      const originalText = document.createElement("p");
+      originalText.textContent = hazard.alert_text || hazard.description;
+      originalBulletin.append(originalSummary, originalText);
+      if (lang !== "en" && hazard.alert_text) {
+        translateAlert(hazard.alert_text, lang)
+          .then((translatedText) => {
+            description.textContent = translatedText;
+            translationNote.textContent =
+              hazardText?.mapTranslationNote || "Machine-translated bulletin";
+          })
+          .catch(() => {});
+      }
       const severity = document.createElement("small");
-      severity.textContent = `${text.severity}: ${hazard.severity}`;
+      const severityKey = hazard.severity?.toLowerCase().split(" ")[0];
+      const translatedSeverity =
+        hazardText?.severities[severityKey] || hazard.severity;
+      severity.textContent = `${text.severity}: ${translatedSeverity}`;
       const dates = document.createElement("small");
-      dates.textContent = `Onset: ${hazard.onset_at ? new Date(hazard.onset_at).toLocaleString() : "N/A"} · Expires: ${hazard.expires_at ? new Date(hazard.expires_at).toLocaleString() : "N/A"}`;
+      const locale = { en: "en-IN", hi: "hi-IN", ml: "ml-IN", nl: "nl-NL" }[
+        lang
+      ];
+      dates.textContent = `${hazardText?.expectedOnset || "Onset"}: ${hazard.onset_at ? new Date(hazard.onset_at).toLocaleString(locale) : hazardText?.notSpecified || "N/A"} · ${hazardText?.expires || "Expires"}: ${hazard.expires_at ? new Date(hazard.expires_at).toLocaleString(locale) : hazardText?.notSpecified || "N/A"}`;
       const source = document.createElement("small");
-      source.textContent = `Source: ${hazard.source || "Officer report"}${hazard.is_demo ? " · DEMO ALERT" : " · OFFICIAL ALERT"}`;
-      popup.append(title, location, description, severity, dates, source);
+      source.textContent = `${hazardText?.source || "Source"}: ${hazard.source || text.officerReport}${hazard.is_demo ? ` · ${hazardText?.demo || "DEMO ALERT"}` : ` · ${hazardText?.official || "OFFICIAL ALERT"}`}`;
+      popup.append(
+        title,
+        location,
+        description,
+        translationNote,
+        originalBulletin,
+        severity,
+        dates,
+        source,
+      );
       if (hazard.source_url) {
         const sourceLink = document.createElement("a");
         sourceLink.href = hazard.source_url;
         sourceLink.target = "_blank";
         sourceLink.rel = "noreferrer";
-        sourceLink.textContent = "View issuing source";
+        sourceLink.textContent =
+          hazardText?.viewSource || "View issuing source";
         popup.append(sourceLink);
       }
       marker.addTo(layer).bindPopup(popup);
@@ -140,7 +177,7 @@ function MapView({ place, hazards, t }) {
       layer.remove();
       hazardLayer.current = null;
     };
-  }, [hazards, place, text]);
+  }, [hazards, place, text, hazardText, lang]);
 
   function recenter() {
     mapInstance.current?.setView(place.coords, place.zoom, { animate: true });
