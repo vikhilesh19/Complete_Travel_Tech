@@ -90,7 +90,19 @@ function App() {
     let active = true;
     async function checkDatabase() {
       try {
-        const response = await fetch("http://localhost:5000/api/health", { cache: "no-store" });
+        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/+$/, "");
+        const healthUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : "/api/health";
+        let response;
+        try {
+          response = await fetch(healthUrl, { cache: "no-store" });
+          if (!response.ok && API_BASE_URL) {
+            response = await fetch("http://localhost:5000/api/health", { cache: "no-store" });
+          }
+        } catch {
+          response = await fetch("http://localhost:5000/api/health", { cache: "no-store" }).catch(() =>
+            fetch("/api/health", { cache: "no-store" })
+          );
+        }
         const data = await response.json();
         if (!response.ok || data.success !== true)
           throw new Error("Database is unavailable.");

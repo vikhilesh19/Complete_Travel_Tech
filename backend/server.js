@@ -34,34 +34,37 @@ app.use(express.urlencoded({ extended: false, limit: "4kb" }));
 
 app.use((req, res, next) => {
   const origin = req.get("Origin");
-  if (!origin) return next();
-  let localDevelopmentOrigin = false;
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      const parsedOrigin = new URL(origin);
-      localDevelopmentOrigin =
-        parsedOrigin.protocol === "http:" &&
-        ["localhost", "127.0.0.1"].includes(parsedOrigin.hostname);
-    } catch {
-      localDevelopmentOrigin = false;
+  if (origin) {
+    let allowed = true;
+    if (allowedFrontendOrigins.size > 0) {
+      try {
+        const parsed = new URL(origin);
+        allowed =
+          ["localhost", "127.0.0.1"].includes(parsed.hostname) ||
+          parsed.hostname.endsWith(".vercel.app") ||
+          allowedFrontendOrigins.has(origin);
+      } catch {
+        allowed = false;
+      }
+    }
+    if (allowed) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+      );
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type,X-Requested-With,X-Wayfinder-Refresh,Authorization",
+      );
+      res.setHeader(
+        "Access-Control-Expose-Headers",
+        "X-Wayfinder-Cached-At,X-Wayfinder-Offline",
+      );
+      res.setHeader("Vary", "Origin");
     }
   }
-  if (!allowedFrontendOrigins.has(origin) && !localDevelopmentOrigin) {
-    return res.status(403).json({ error: "Frontend origin is not allowed." });
-  }
-
-  res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type,X-Requested-With,X-Wayfinder-Refresh",
-  );
-  res.setHeader(
-    "Access-Control-Expose-Headers",
-    "X-Wayfinder-Cached-At,X-Wayfinder-Offline",
-  );
-  res.setHeader("Vary", "Origin");
 
   if (req.method === "OPTIONS") return res.sendStatus(204);
   return next();
@@ -1098,4 +1101,8 @@ async function start() {
   });
 }
 
-start();
+if (process.env.VERCEL !== "1") {
+  start();
+}
+
+module.exports = app;

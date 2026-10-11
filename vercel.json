@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/backend/api/health.js"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/api/index.js"
+    }
+  ]
+}
