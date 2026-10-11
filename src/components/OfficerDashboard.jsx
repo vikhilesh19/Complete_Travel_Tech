@@ -187,6 +187,13 @@ function OfficerDashboard({
           data.error ||
             (isRegistration ? "Registration failed." : "Sign-in failed."),
         );
+      const sessionResponse = await apiFetch("/api/officer/session");
+      const sessionData = await readApiResponse(sessionResponse);
+      if (!sessionResponse.ok || !sessionData.authenticated) {
+        throw new Error(
+          "Sign-in succeeded, but the browser did not retain your session. Use the same site for the frontend and API, then sign in again.",
+        );
+      }
       setOfficer(data.username);
       try {
         setOwnedHazardIds(await fetchOwnedHazardIds());
@@ -302,6 +309,12 @@ function OfficerDashboard({
           : `${data.sms.sent} SMS accepted by the provider; ${data.sms.failed} failed.`;
       onNotice(`Hazard report saved. ${smsNotice}`);
     } catch (requestError) {
+      if (requestError.message === "Officer sign-in required.") {
+        setOfficer(null);
+        setOwnedHazardIds(new Set());
+        setError("Your officer session expired. Sign in again to publish reports.");
+        return;
+      }
       setError(
         requestError.message || "Could not connect to the hazard service.",
       );

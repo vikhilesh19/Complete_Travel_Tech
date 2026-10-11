@@ -27,7 +27,10 @@ const smsCodeRequests = new Map();
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
+  max: 5,
 });
+
+let databaseInitialization;
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: false, limit: "4kb" }));
@@ -68,6 +71,19 @@ app.use((req, res, next) => {
 
   if (req.method === "OPTIONS") return res.sendStatus(204);
   return next();
+});
+
+app.use(async (req, res, next) => {
+  if (req.path === "/api/health" || req.method === "OPTIONS") return next();
+  try {
+    await ensureDatabaseReady();
+    return next();
+  } catch (error) {
+    console.error("Neon database initialization failed:", error.message);
+    return res
+      .status(503)
+      .json({ error: "The application database is unavailable." });
+  }
 });
 
 // Health check endpoint uses backend/api/health.js
@@ -488,7 +504,7 @@ function safeEqual(first, second) {
 
 function sign(payload) {
   return crypto
-    .createHmac("sha256", process.env.SESSION_SECRET || "wayfinder-secret-key-123456789")
+    .createHmac("sha256", process.env.SESSION_SECRET || "")
     .update(payload)
     .digest("base64url");
 }
@@ -500,7 +516,7 @@ function getSession(req) {
     .map((cookie) => cookie.trim())
     .find((cookie) => cookie.startsWith(`${sessionCookieName}=`))
     ?.slice(sessionCookieName.length + 1);
-  if (!token) return null;
+  if (!token || !process.env.SESSION_SECRET) return null;
 
   const [payload, signature] = decodeURIComponent(token).split(".");
   if (!payload || !signature || !safeEqual(sign(payload), signature))
@@ -580,13 +596,18 @@ function setSessionCookie(res, username) {
   res.cookie(sessionCookieName, token, {
     httpOnly: true,
     sameSite,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" || sameSite === "none",
     maxAge: sessionLifetimeSeconds * 1000,
     path: "/",
   });
 }
 
 app.post("/api/officer/login", async (req, res) => {
+  if (!process.env.SESSION_SECRET) {
+    return res
+      .status(503)
+      .json({ error: "Officer sign-in is not configured. Set SESSION_SECRET." });
+  }
   const { username, password } = req.body || {};
   if (typeof username !== "string" || typeof password !== "string") {
     return res.status(401).json({ error: "Invalid officer credentials." });
@@ -631,7 +652,7 @@ app.post("/api/officer/login", async (req, res) => {
 
 function otpDigest(email, code) {
   return crypto
-    .createHmac("sha256", process.env.SESSION_SECRET || "wayfinder-secret-key-123456789")
+    .createHmac("sha256", process.env.SESSION_SECRET || "")
     .update(`${email}:${code}`)
     .digest("hex");
 }
@@ -652,6 +673,11 @@ function mailTransport() {
 }
 
 app.post("/api/officer/register/send-otp", async (req, res) => {
+  if (!process.env.SESSION_SECRET) {
+    return res
+      .status(503)
+      .json({ error: "Officer registration is not configured. Set SESSION_SECRET." });
+  }
   const { email, username, password } = req.body || {};
   const normalizedEmail =
     typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -762,6 +788,11 @@ app.post("/api/officer/register/send-otp", async (req, res) => {
 });
 
 app.post("/api/officer/register", async (req, res) => {
+  if (!process.env.SESSION_SECRET) {
+    return res
+      .status(503)
+      .json({ error: "Officer registration is not configured. Set SESSION_SECRET." });
+  }
   const email =
     typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
   const code = typeof req.body?.otp === "string" ? req.body.otp.trim() : "";
@@ -862,9 +893,11 @@ app.get("/api/officer/session", (req, res) => {
 });
 
 app.post("/api/officer/logout", (_req, res) => {
+  const sameSite = process.env.COOKIE_SAME_SITE || "lax";
   res.clearCookie(sessionCookieName, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite,
+    secure: process.env.NODE_ENV === "production" || sameSite === "none",
     path: "/",
   });
   return res.status(204).end();
@@ -1039,9 +1072,16 @@ app.delete("/api/hazards/:id", requireOfficer, async (req, res) => {
   }
 });
 
-async function start() {
+async function initializeDatabase() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not configured.");
+  }
+
+  const client = await pool.connect();
   try {
-    await pool.query(`
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(74201931)");
+    await client.query(`
       CREATE TABLE IF NOT EXISTS hazards (
         id BIGSERIAL PRIMARY KEY,
         hazard VARCHAR(80) NOT NULL,
@@ -1063,7 +1103,42 @@ async function start() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await pool.query(`
+    await client.query(`
+      ALTER TABLE hazards
+        ADD COLUMN IF NOT EXISTS area_id VARCHAR(16) NOT NULL DEFAULT 'kerala',
+        ADD COLUMN IF NOT EXISTS affected_zone VARCHAR(120),
+        ADD COLUMN IF NOT EXISTS alert_text TEXT,
+        ADD COLUMN IF NOT EXISTS onset_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS source VARCHAR(160),
+        ADD COLUMN IF NOT EXISTS source_url VARCHAR(500),
+        ADD COLUMN IF NOT EXISTS is_demo BOOLEAN NOT NULL DEFAULT TRUE
+    `);
+    await client.query(
+      "ALTER TABLE hazards ALTER COLUMN severity TYPE VARCHAR(32), ALTER COLUMN description TYPE TEXT",
+    );
+    await client.query(
+      "ALTER TABLE hazards DROP CONSTRAINT IF EXISTS hazards_severity_check",
+    );
+    await client.query(`
+      UPDATE hazards SET severity = CASE severity
+        WHEN 'Low' THEN 'Information (blue)'
+        WHEN 'Moderate' THEN 'Advisory (yellow)'
+        WHEN 'High' THEN 'Warning (orange)'
+        WHEN 'Severe' THEN 'Danger (red)'
+        ELSE severity
+      END
+      WHERE severity IN ('Low', 'Moderate', 'High', 'Severe')
+    `);
+    await client.query(`
+      ALTER TABLE hazards ADD CONSTRAINT hazards_severity_check
+      CHECK (severity IN ('Danger (red)', 'Warning (orange)', 'Advisory (yellow)', 'Information (blue)'))
+    `);
+    await client.query(`
+      UPDATE hazards SET affected_zone = COALESCE(affected_zone, location),
+                          alert_text = COALESCE(alert_text, description)
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS officer_accounts (
         id BIGSERIAL PRIMARY KEY,
         username VARCHAR(32) NOT NULL UNIQUE,
@@ -1071,7 +1146,24 @@ async function start() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await pool.query(`
+    await client.query(
+      "ALTER TABLE officer_accounts ADD COLUMN IF NOT EXISTS email VARCHAR(254)",
+    );
+    await client.query(
+      "CREATE UNIQUE INDEX IF NOT EXISTS officer_accounts_email_unique ON officer_accounts (email) WHERE email IS NOT NULL",
+    );
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS officer_registration_otps (
+        email VARCHAR(254) PRIMARY KEY,
+        username VARCHAR(32) NOT NULL,
+        password_hash VARCHAR(100) NOT NULL,
+        otp_hash VARCHAR(64) NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_sent_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+    await client.query(`
       CREATE TABLE IF NOT EXISTS tourist_help_actions (
         id UUID PRIMARY KEY,
         action VARCHAR(16) NOT NULL CHECK (action IN ('safe', 'help', 'callback')),
@@ -1080,7 +1172,7 @@ async function start() {
         received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS tourist_sms_subscriptions (
         phone_e164 VARCHAR(16) NOT NULL,
         area_id VARCHAR(16) NOT NULL CHECK (area_id IN ('kerala', 'wayanad')),
@@ -1091,9 +1183,49 @@ async function start() {
         PRIMARY KEY (phone_e164, area_id)
       )
     `);
-    console.log("Neon database ready with tables.");
+    await client.query(
+      "CREATE INDEX IF NOT EXISTS tourist_sms_subscriptions_area_idx ON tourist_sms_subscriptions (area_id)",
+    );
+    await client.query(
+      "ALTER TABLE tourist_help_actions ALTER COLUMN action TYPE VARCHAR(16)",
+    );
+    await client.query(
+      "ALTER TABLE tourist_help_actions DROP CONSTRAINT IF EXISTS tourist_help_actions_action_check",
+    );
+    await client.query(`
+      ALTER TABLE tourist_help_actions
+      ADD CONSTRAINT tourist_help_actions_action_check
+      CHECK (action IN ('safe', 'help', 'callback'))
+    `);
+    await client.query("COMMIT");
+    console.log("Neon database schema is ready.");
   } catch (error) {
-    console.error("Neon DB init check:", error.message);
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Neon database rollback failed:", rollbackError.message);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+function ensureDatabaseReady() {
+  if (!databaseInitialization) {
+    databaseInitialization = initializeDatabase().catch((error) => {
+      databaseInitialization = undefined;
+      throw error;
+    });
+  }
+  return databaseInitialization;
+}
+
+async function start() {
+  try {
+    await ensureDatabaseReady();
+  } catch (error) {
+    console.error("Neon database is not available yet:", error.message);
   }
 
   app.listen(port, () => {

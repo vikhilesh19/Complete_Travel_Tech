@@ -28,14 +28,14 @@ During floods, cyclones, and landslides, visitors may have trouble finding clear
 ## Architecture
 
 - `src/`: React 19 and Vite traveler/officer interface.
-- `server/index.js`: Express application API used by the full local application. It connects to PostgreSQL through `DATABASE_URL` and initializes the application's tables.
-- `backend/api/health.js`: separate Vercel serverless health check. It verifies that its `DATABASE_URL` can query Neon; it does **not** implement the application routes for hazards, officers, help requests, or SMS.
-- `backend/server.js`: standalone Express health-check example; it is not the full application API.
+- `backend/server.js`: full Express application API used by local scripts and the Vercel function wrapper. It connects to PostgreSQL through `DATABASE_URL` and initializes the application's tables.
+- `backend/api/health.js`: Vercel health check that queries Neon through the same `DATABASE_URL`.
+- `server/index.js`: alternate Express application API entry point.
 - `public/sw.js`: PWA service worker and offline public-data handling.
 
-The Vite development server proxies `/api` to `http://localhost:3001` by default. The browser can use `VITE_API_BASE_URL` to call a separately hosted API. The frontend must point to a backend that implements all routes it uses; a successful `/api/health` response alone does not provide the application API.
+The Vite development server proxies `/api` to `http://localhost:5000` by default, matching `npm run api`. In production, leave `VITE_API_BASE_URL` blank when the frontend and API are deployed together so browser requests and officer session cookies stay on the same origin.
 
-The application API's `GET /api/health` executes a PostgreSQL query and reports whether its configured database connection is available. The frontend uses this endpoint only for the connection indicator; hazard and officer data continue to use their dedicated API routes.
+`GET /api/health` executes a PostgreSQL query and reports whether the configured Neon connection is available. The complete API also serves the hazard, officer, help-request, and SMS routes.
 
 ## Requirements
 
@@ -59,7 +59,7 @@ The application API's `GET /api/health` executes a PostgreSQL query and reports 
    npm run dev
    ```
 
-The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `3001`. The API creates or updates its tables during startup. To run just one process, use `npm run api` or `npm run dev:web`.
+The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `5000`. The API creates or updates its tables during startup locally and on its first request in a Vercel function. To run just one process, use `npm run api` or `npm run dev:web`.
 
 PowerShell environment-file setup:
 
@@ -73,15 +73,15 @@ For a hosted PostgreSQL provider, use the provider's complete connection URL as 
 
 ### Full application API
 
-Set these in the environment where `server/index.js` runs:
+Set these in the environment where `backend/server.js` runs:
 
 | Variable                                                                                                                       | Purpose                                                                                                                           |
 | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`                                                                                                                 | PostgreSQL connection string.                                                                                                     |
 | `SESSION_SECRET`                                                                                                               | Signs officer session cookies; use a long random value.                                                                           |
 | `OFFICER_USERNAME`, `OFFICER_PASSWORD`                                                                                         | Optional configured officer login. Prefer a strong password.                                                                      |
-| `API_PORT`                                                                                                                     | Local API port; defaults to `3001`.                                                                                               |
-| `API_PROXY_TARGET`                                                                                                             | Vite development proxy destination; defaults to `http://localhost:3001`.                                                          |
+| `API_PORT`                                                                                                                     | Local API port; defaults to `5000`.                                                                                               |
+| `API_PROXY_TARGET`                                                                                                             | Vite development proxy destination; defaults to `http://localhost:5000`.                                                          |
 | `FRONTEND_ORIGINS`                                                                                                             | Comma-separated allowed browser origins for cross-origin API calls.                                                               |
 | `COOKIE_SAME_SITE`                                                                                                             | Session cookie policy; keep `strict` for same-site. Cross-site requires HTTPS and `none`, subject to browser cookie restrictions. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`                                                      | Optional officer email-registration delivery. Keep SMTP credentials server-side.                                                  |
@@ -90,7 +90,7 @@ Set these in the environment where `server/index.js` runs:
 
 ### Frontend API origin
 
-`VITE_API_BASE_URL` is embedded in the frontend at build time and is therefore public. Set it to the API origin only, for example `https://api.example.com`, with no trailing slash. It must never contain a database URL, password, or provider secret. Leave it blank for local development with the Vite proxy.
+`VITE_API_BASE_URL` is embedded in the frontend at build time and is therefore public. Keep it blank for same-origin deployments and local development with the Vite proxy. Only set it to an API origin when the API is hosted separately; it must never contain a database URL, password, or provider secret.
 
 ## Deployment
 
@@ -101,13 +101,10 @@ For the current Vite frontend, configure the Vercel project with:
 - Root directory: repository root
 - Build command: `npm run build`
 - Output directory: `dist`
-- Environment variable: `VITE_API_BASE_URL=https://<your-full-api-origin>`
+- Backend environment variables: `DATABASE_URL` (Neon's pooled connection string) and a long random `SESSION_SECRET`
+- Leave `VITE_API_BASE_URL` blank so the frontend uses the API on the same Vercel deployment.
 
-Redeploy after setting or changing `VITE_API_BASE_URL`. On the API host, set `FRONTEND_ORIGINS` to the exact Vercel site origin.
-
-**The complete application API is not currently deployed as Vercel functions in this repository.** `backend/api/health.js` is only a database health check. To make the deployed frontend fully functional, deploy `server/index.js` as a persistent Node API service or implement the required application endpoints as serverless functions, then set `VITE_API_BASE_URL` to that service. The Vercel health endpoint can confirm database connectivity, but it cannot replace those routes.
-
-No public deployment URL is currently recorded in this repository.
+The Vercel rewrite sends `/api/*` requests to the full Express API function. The API initializes the required Neon tables before serving application routes. Redeploy after changing backend environment variables. If the API is hosted separately, configure `FRONTEND_ORIGINS` to the exact frontend origin and use HTTPS with `COOKIE_SAME_SITE=none`; same-origin hosting is preferred because browsers may block third-party cookies.
 
 ## Application API
 
@@ -130,7 +127,7 @@ The full Express API in `server/index.js` provides:
 | `POST /api/sms/subscriptions/verify`       | Public            | Verify and subscribe a phone number to a region.            |
 | `POST /api/sms/twilio/inbound`             | Twilio signature  | Process SMS opt-out keywords.                               |
 
-The separate Vercel function currently exposes only `GET /api/health`.
+Vercel exposes the full application API through `backend/api/index.js` and the database health check through `backend/api/health.js`.
 
 ## SMS notifications
 We Will Modify it after sometime due to govt rules we cannot directly send sms      
