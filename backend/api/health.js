@@ -1,10 +1,4 @@
-const { Pool } = require("pg");
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 5,
-});
+const pool = require("../database");
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -32,7 +26,7 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Neon database connected",
+      message: "PostgreSQL database connected",
       database: result.rows[0].database_name,
       time: result.rows[0].server_time,
     });

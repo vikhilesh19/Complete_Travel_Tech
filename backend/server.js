@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const nodemailer = require("nodemailer");
-const { Pool } = require("pg");
+const pool = require("./database");
 const healthHandler = require("./api/health");
 
 const app = express();
@@ -23,12 +23,6 @@ const translationCache = new Map();
 const translationRequests = new Map();
 const helpActionRequests = new Map();
 const smsCodeRequests = new Map();
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 5,
-});
 
 let databaseInitialization;
 
@@ -79,7 +73,7 @@ app.use(async (req, res, next) => {
     await ensureDatabaseReady();
     return next();
   } catch (error) {
-    console.error("Neon database initialization failed:", error.message);
+    console.error("PostgreSQL database initialization failed:", error.message);
     return res
       .status(503)
       .json({ error: "The application database is unavailable." });
@@ -1198,12 +1192,12 @@ async function initializeDatabase() {
       CHECK (action IN ('safe', 'help', 'callback'))
     `);
     await client.query("COMMIT");
-    console.log("Neon database schema is ready.");
+    console.log("PostgreSQL database schema is ready.");
   } catch (error) {
     try {
       await client.query("ROLLBACK");
     } catch (rollbackError) {
-      console.error("Neon database rollback failed:", rollbackError.message);
+      console.error("PostgreSQL database rollback failed:", rollbackError.message);
     }
     throw error;
   } finally {
@@ -1222,10 +1216,16 @@ function ensureDatabaseReady() {
 }
 
 async function start() {
+  if (!process.env.SESSION_SECRET) {
+    console.error(
+      "Officer sign-in is disabled. Set SESSION_SECRET in the project .env file.",
+    );
+  }
+
   try {
     await ensureDatabaseReady();
   } catch (error) {
-    console.error("Neon database is not available yet:", error.message);
+    console.error("PostgreSQL database is not available yet:", error.message);
   }
 
   app.listen(port, () => {

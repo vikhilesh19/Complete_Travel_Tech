@@ -52,20 +52,24 @@ The Vite development server proxies `/api` to `http://localhost:5000` by default
    ```
 
 2. Create a database, or prepare a PostgreSQL connection string from your database provider.
-3. Copy `.env.example` to `.env` and set at least `DATABASE_URL` and `SESSION_SECRET`.
+3. Copy `.env.example` to `.env`, set `DATABASE_URL` to the Neon connection string (or a local PostgreSQL URL), and set a strong random `SESSION_SECRET`.
 4. Start the API and frontend together:
 
    ```sh
    npm run dev
    ```
 
-The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `5000`. The API creates or updates its tables during startup locally and on its first request in a Vercel function. To run just one process, use `npm run api` or `npm run dev:web`.
+The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `5000` by default, or on `API_PORT` when set. Vite uses that same `API_PORT` for its local API proxy. The API creates or updates its tables during startup locally and on its first request in a Vercel function. To run just one process, use `npm run api` or `npm run dev:web`.
 
 PowerShell environment-file setup:
 
 ```powershell
 Copy-Item .env.example .env
+$secret = node -p "require('crypto').randomBytes(32).toString('hex')"
+Add-Content .env "SESSION_SECRET=$secret"
 ```
+
+For local development with Neon, put Neon's pooled connection string in `DATABASE_URL` in this same `.env` file. Keep the database URL and officer credentials out of `VITE_API_BASE_URL` and out of Git.
 
 For a hosted PostgreSQL provider, use the provider's complete connection URL as `DATABASE_URL`. Keep it in the backend environment only. Do not use it as `VITE_API_BASE_URL` or commit it to Git.
 

@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const target =
     env.API_PROXY_TARGET ||
     env.VITE_API_BASE_URL ||
-    "http://localhost:5000";
+    `http://localhost:${env.API_PORT || "5000"}`;
 
   return {
     plugins: [react()],
