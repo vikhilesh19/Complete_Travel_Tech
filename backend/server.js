@@ -8,7 +8,10 @@ require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 
 function getSessionSecret() {
   if (process.env.SESSION_SECRET?.trim()) return process.env.SESSION_SECRET;
-  if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production")
+  if (
+    process.env.NODE_ENV === "production" ||
+    (process.env.VERCEL === "1" && require.main !== module)
+  )
     return "";
 
   const secretPath = path.resolve(__dirname, "..", ".session-secret");
@@ -39,7 +42,11 @@ const pool = require("./database");
 const healthHandler = require("./api/health");
 
 const app = express();
-const port = Number(process.env.PORT || process.env.API_PORT || 5000);
+const port = Number(
+  process.env.NODE_ENV === "production"
+    ? process.env.PORT || process.env.API_PORT || 5000
+    : process.env.API_PORT || 5000,
+);
 
 const allowedFrontendOrigins = new Set(
   (process.env.FRONTEND_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173")

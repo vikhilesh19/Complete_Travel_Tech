@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"npm:api\" \"npm:dev:web\"",
+    "dev": "concurrently --names api,web --restart-tries -1 --restart-after 1000 \"node backend/server.js\" \"vite\"",
     "dev:web": "vite",
     "api": "node backend/server.js",
     "dev:full": "npm run dev",
