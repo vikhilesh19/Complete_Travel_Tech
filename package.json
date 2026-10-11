@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k \"npm:api\" \"npm:dev:web\"",
     "dev:web": "vite",
-    "api": "node server/index.js",
+    "api": "node backend/server.js",
     "dev:full": "npm run dev",
     "build": "vite build",
     "lint": "oxlint",

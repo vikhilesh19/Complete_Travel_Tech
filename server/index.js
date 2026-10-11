@@ -9,7 +9,10 @@ const { Pool } = pg;
 const app = express();
 const pool = new Pool(
   process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL }
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+      }
     : undefined,
 );
 const port = Number(process.env.API_PORT || 3001);
@@ -76,7 +79,7 @@ app.get("/api/health", async (_req, res) => {
     );
     return res.json({
       success: true,
-      message: "Database connected",
+      message: "Neon database connected",
       database: result.rows[0].database_name,
       time: result.rows[0].server_time,
     });
