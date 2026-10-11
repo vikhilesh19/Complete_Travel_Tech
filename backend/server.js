@@ -4,15 +4,19 @@ const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const nodemailer = require("nodemailer");
-require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
+const envPath = path.resolve(__dirname, "..", ".env");
+const dotenvResult = require("dotenv").config({ path: envPath });
+
+if (
+  !process.env.SESSION_SECRET?.trim() &&
+  dotenvResult.parsed?.SESSION_SECRET?.trim()
+) {
+  process.env.SESSION_SECRET = dotenvResult.parsed.SESSION_SECRET;
+}
 
 function getSessionSecret() {
   if (process.env.SESSION_SECRET?.trim()) return process.env.SESSION_SECRET;
-  if (
-    process.env.NODE_ENV === "production" ||
-    (process.env.VERCEL === "1" && require.main !== module)
-  )
-    return "";
+  if (process.env.VERCEL === "1" && require.main !== module) return "";
 
   const secretPath = path.resolve(__dirname, "..", ".session-secret");
   try {
@@ -626,10 +630,15 @@ function setSessionCookie(res, username) {
   ).toString("base64url");
   const token = `${payload}.${sign(payload)}`;
   const sameSite = process.env.COOKIE_SAME_SITE || "lax";
+  const requestHostname = res.req.hostname
+    .replace(/^\[|\]$/g, "")
+    .toLowerCase();
+  const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(requestHostname);
   res.cookie(sessionCookieName, token, {
     httpOnly: true,
     sameSite,
-    secure: process.env.NODE_ENV === "production" || sameSite === "none",
+    secure:
+      sameSite === "none" || (process.env.NODE_ENV === "production" && !isLocalHost),
     maxAge: sessionLifetimeSeconds * 1000,
     path: "/",
   });
@@ -927,10 +936,15 @@ app.get("/api/officer/session", (req, res) => {
 
 app.post("/api/officer/logout", (_req, res) => {
   const sameSite = process.env.COOKIE_SAME_SITE || "lax";
+  const requestHostname = res.req.hostname
+    .replace(/^\[|\]$/g, "")
+    .toLowerCase();
+  const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(requestHostname);
   res.clearCookie(sessionCookieName, {
     httpOnly: true,
     sameSite,
-    secure: process.env.NODE_ENV === "production" || sameSite === "none",
+    secure:
+      sameSite === "none" || (process.env.NODE_ENV === "production" && !isLocalHost),
     path: "/",
   });
   return res.status(204).end();
