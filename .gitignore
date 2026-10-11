@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .env
 .env.local
+.session-secret
 !.env.example
 
 # Editor directories and files

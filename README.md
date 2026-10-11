@@ -59,7 +59,7 @@ The Vite development server proxies `/api` to `http://localhost:5000` by default
    npm run dev
    ```
 
-The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `5000` by default, or on `API_PORT` when set. Vite uses that same `API_PORT` for its local API proxy. The API creates or updates its tables during startup locally and on its first request in a Vercel function. To run just one process, use `npm run api` or `npm run dev:web`.
+The frontend is served by Vite, normally at `http://localhost:5173`; the application API listens on port `5000` by default, or on `API_PORT` when set. Vite uses that same `API_PORT` for its local API proxy. The API creates or updates its tables during startup locally and on its first request in a Vercel function. `npm run api` always starts the local listener, even if a `VERCEL=1` variable is inherited by the terminal. If `SESSION_SECRET` is unset during local development, the API creates a random persistent secret in the ignored `.session-secret` file; production still requires an explicit `SESSION_SECRET`. To run just one process, use `npm run api` or `npm run dev:web`.
 
 PowerShell environment-file setup:
 

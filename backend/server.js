@@ -1,8 +1,40 @@
-require("dotenv").config();
+const fs = require("node:fs");
+const path = require("node:path");
 const crypto = require("node:crypto");
 const bcrypt = require("bcryptjs");
 const express = require("express");
 const nodemailer = require("nodemailer");
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
+
+function getSessionSecret() {
+  if (process.env.SESSION_SECRET?.trim()) return process.env.SESSION_SECRET;
+  if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production")
+    return "";
+
+  const secretPath = path.resolve(__dirname, "..", ".session-secret");
+  try {
+    const storedSecret = fs.readFileSync(secretPath, "utf8").trim();
+    if (storedSecret) return storedSecret;
+    throw new Error("The local session secret file is empty.");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+
+  const newSecret = crypto.randomBytes(32).toString("hex");
+  try {
+    fs.writeFileSync(secretPath, newSecret, { encoding: "utf8", flag: "wx" });
+    return newSecret;
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+    const storedSecret = fs.readFileSync(secretPath, "utf8").trim();
+    if (!storedSecret) throw new Error("The local session secret file is empty.");
+    return storedSecret;
+  }
+}
+
+const sessionSecret = getSessionSecret();
+if (sessionSecret) process.env.SESSION_SECRET = sessionSecret;
+
 const pool = require("./database");
 const healthHandler = require("./api/health");
 
@@ -1233,7 +1265,7 @@ async function start() {
   });
 }
 
-if (process.env.VERCEL !== "1") {
+if (require.main === module) {
   start();
 }
 
