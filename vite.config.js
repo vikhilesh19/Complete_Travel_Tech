@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const target =
     env.API_PROXY_TARGET ||
     env.VITE_API_BASE_URL ||
-    "https://travel-tech-82ex.vercel.app";
+    "https://complete-travel-tech.vercel.app/";
 
   return {
     plugins: [react()],

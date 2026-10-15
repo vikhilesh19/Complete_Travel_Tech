@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://travel-tech-82ex.vercel.app/api/$1"
+      "destination": "https://complete-travel-tech.vercel.app//api/$1"
     }
   ]
 }
